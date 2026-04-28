@@ -13,7 +13,12 @@ const Auth = () => {
     fullName: '',
     email: '',
     phoneNumber: '',
+    otp: '',
+    password: '',
+    confirmPassword: '',
   });
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
   const [registerError, setRegisterError] = useState('');
   const [registerSuccess, setRegisterSuccess] = useState('');
   const [registerLoading, setRegisterLoading] = useState(false);
@@ -23,10 +28,46 @@ const Auth = () => {
     setRegisterError('');
   };
 
+  const handleSendOtp = async () => {
+    if (!registerForm.fullName || !registerForm.email) {
+      setRegisterError('Vui lòng nhập họ tên và email trước');
+      return;
+    }
+    setRegisterError('');
+    setOtpLoading(true);
+    try {
+      const res = await fetch('http://localhost:8080/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: registerForm.fullName,
+          email: registerForm.email,
+          phoneNumber: registerForm.phoneNumber,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpSent(true);
+        setRegisterError('');
+      } else {
+        setRegisterError(data.message || 'Không thể gửi mã. Vui lòng thử lại.');
+      }
+    } catch {
+      setRegisterError('Không thể kết nối đến server. Vui lòng thử lại.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegisterError('');
     setRegisterSuccess('');
+
+    if (registerForm.password !== registerForm.confirmPassword) {
+      setRegisterError('Mật khẩu xác nhận không khớp');
+      return;
+    }
 
     setRegisterLoading(true);
     try {
@@ -37,8 +78,9 @@ const Auth = () => {
       });
       const data = await res.json();
       if (data.success) {
-        setRegisterSuccess('Đăng ký thành công! Mật khẩu đã được gửi đến email của bạn.');
-        setRegisterForm({ fullName: '', email: '', phoneNumber: '' });
+        setRegisterSuccess('Đăng ký thành công! Bạn có thể đăng nhập ngay.');
+        setRegisterForm({ fullName: '', email: '', phoneNumber: '', otp: '', password: '', confirmPassword: '' });
+        setOtpSent(false);
       } else {
         setRegisterError(data.message || 'Đăng ký thất bại');
       }
@@ -129,29 +171,76 @@ const Auth = () => {
                   onChange={handleRegisterChange}
                   placeholder="Họ và tên"
                   required
-                  className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm"
+                  disabled={otpSent}
+                  className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm disabled:bg-gray-50 disabled:text-gray-400"
                 />
-                <input
-                  type="email"
-                  name="email"
-                  value={registerForm.email}
-                  onChange={handleRegisterChange}
-                  placeholder="Địa chỉ email"
-                  required
-                  className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    name="email"
+                    value={registerForm.email}
+                    onChange={handleRegisterChange}
+                    placeholder="Địa chỉ email"
+                    required
+                    disabled={otpSent}
+                    className="flex-1 border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm disabled:bg-gray-50 disabled:text-gray-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={otpLoading || otpSent}
+                    className="bg-gray-700 hover:bg-gray-800 disabled:opacity-60 text-white font-bold px-4 rounded text-[13px] whitespace-nowrap"
+                  >
+                    {otpSent ? '✓ Đã gửi' : otpLoading ? 'Đang gửi...' : 'Gửi mã'}
+                  </button>
+                </div>
                 <input
                   type="text"
                   name="phoneNumber"
                   value={registerForm.phoneNumber}
                   onChange={handleRegisterChange}
                   placeholder="Số điện thoại (tùy chọn)"
-                  className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm"
+                  disabled={otpSent}
+                  className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm disabled:bg-gray-50 disabled:text-gray-400"
                 />
 
-                <p className="text-[15px] text-[#0f172a] font-medium leading-relaxed">
-                  Mật khẩu sẽ được gửi đến địa chỉ email của bạn.
-                </p>
+                {otpSent && (
+                  <>
+                    <div>
+                      <p className="text-green-600 text-[13px] font-medium mb-2">
+                        ✓ Mã xác nhận đã gửi đến <strong>{registerForm.email}</strong>. Có hiệu lực trong 5 phút.
+                      </p>
+                      <input
+                        type="text"
+                        name="otp"
+                        value={registerForm.otp}
+                        onChange={handleRegisterChange}
+                        placeholder="Nhập mã xác nhận (6 số)"
+                        required
+                        maxLength={6}
+                        className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm tracking-widest text-center font-bold"
+                      />
+                    </div>
+                    <input
+                      type="password"
+                      name="password"
+                      value={registerForm.password}
+                      onChange={handleRegisterChange}
+                      placeholder="Mật khẩu (ít nhất 6 ký tự)"
+                      required
+                      className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm"
+                    />
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={registerForm.confirmPassword}
+                      onChange={handleRegisterChange}
+                      placeholder="Xác nhận mật khẩu"
+                      required
+                      className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm"
+                    />
+                  </>
+                )}
 
                 {registerError && (
                   <p className="text-red-500 text-[13.5px] font-medium">{registerError}</p>
@@ -164,15 +253,17 @@ const Auth = () => {
                   Dữ liệu cá nhân của bạn sẽ được sử dụng để xử lý đơn đặt hàng, hỗ trợ trải nghiệm của bạn trên toàn bộ trang web này và cho các mục đích khác được mô tả trong <a href="#" className="text-[#ea580c] font-bold hover:underline">chính sách riêng tư</a>.
                 </p>
 
-                <div className="mt-1">
-                  <button
-                    type="submit"
-                    disabled={registerLoading}
-                    className="bg-gradient-to-b from-[#f5741c] to-[#e4511d] hover:to-[#cd4617] active:to-[#b63c11] disabled:opacity-60 text-white font-bold py-[14px] rounded shadow-[0_2px_10px_rgba(232,90,33,0.3)] min-w-[30%] uppercase tracking-wide text-sm flex items-center justify-center border border-[#e85a21] px-10"
-                  >
-                    {registerLoading ? 'Đang gửi...' : 'ĐĂNG KÝ'}
-                  </button>
-                </div>
+                {otpSent && (
+                  <div className="mt-1">
+                    <button
+                      type="submit"
+                      disabled={registerLoading}
+                      className="bg-gradient-to-b from-[#f5741c] to-[#e4511d] hover:to-[#cd4617] active:to-[#b63c11] disabled:opacity-60 text-white font-bold py-[14px] rounded shadow-[0_2px_10px_rgba(232,90,33,0.3)] min-w-[30%] uppercase tracking-wide text-sm flex items-center justify-center border border-[#e85a21] px-10"
+                    >
+                      {registerLoading ? 'Đang xử lý...' : 'ĐĂNG KÝ'}
+                    </button>
+                  </div>
+                )}
               </form>
             )}
           </div>
