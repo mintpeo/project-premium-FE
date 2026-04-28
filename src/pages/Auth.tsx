@@ -8,6 +8,47 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isRemember, setIsRemember] = useState(false);
 
+  // Register state
+  const [registerForm, setRegisterForm] = useState({
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+  });
+  const [registerError, setRegisterError] = useState('');
+  const [registerSuccess, setRegisterSuccess] = useState('');
+  const [registerLoading, setRegisterLoading] = useState(false);
+
+  const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRegisterForm({ ...registerForm, [e.target.name]: e.target.value });
+    setRegisterError('');
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegisterError('');
+    setRegisterSuccess('');
+
+    setRegisterLoading(true);
+    try {
+      const res = await fetch('http://localhost:8080/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registerForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRegisterSuccess('Đăng ký thành công! Mật khẩu đã được gửi đến email của bạn.');
+        setRegisterForm({ fullName: '', email: '', phoneNumber: '' });
+      } else {
+        setRegisterError(data.message || 'Đăng ký thất bại');
+      }
+    } catch {
+      setRegisterError('Không thể kết nối đến server. Vui lòng thử lại.');
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#edf3f6] font-sans flex flex-col relative overflow-x-hidden">
 
@@ -80,32 +121,59 @@ const Auth = () => {
               </div>
             ) : (
               // Register Form
-              <div className="flex flex-col gap-6">
-                <input type="email" placeholder="Địa chỉ email" className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm" />
+              <form onSubmit={handleRegisterSubmit} className="flex flex-col gap-5">
+                <input
+                  type="text"
+                  name="fullName"
+                  value={registerForm.fullName}
+                  onChange={handleRegisterChange}
+                  placeholder="Họ và tên"
+                  required
+                  className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm"
+                />
+                <input
+                  type="email"
+                  name="email"
+                  value={registerForm.email}
+                  onChange={handleRegisterChange}
+                  placeholder="Địa chỉ email"
+                  required
+                  className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm"
+                />
+                <input
+                  type="text"
+                  name="phoneNumber"
+                  value={registerForm.phoneNumber}
+                  onChange={handleRegisterChange}
+                  placeholder="Số điện thoại (tùy chọn)"
+                  className="w-full border border-gray-200 rounded p-[14px] text-[15px] focus:outline-none focus:border-orange-500 placeholder-gray-500 text-[#0f172a] shadow-sm"
+                />
 
-                <p className="text-[15px] text-[#0f172a] font-medium leading-relaxed mt-[-5px]">
-                  A password will be sent to your email address.
+                <p className="text-[15px] text-[#0f172a] font-medium leading-relaxed">
+                  Mật khẩu sẽ được gửi đến địa chỉ email của bạn.
                 </p>
 
-                <div>
-                  <p className="font-bold text-[#0f172a] text-[14.5px] mt-2 mb-3">Đăng nhập bằng mạng xã hội</p>
-                  <button className="flex items-center justify-center gap-3 bg-[#f2f2f2] hover:bg-gray-200 text-[#0f172a] font-bold py-3.5 rounded transition-colors w-full shadow-sm">
-                    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.74 12.27c0-.86-.07-1.68-.21-2.47H12v4.67h6.58c-.28 1.51-1.12 2.79-2.39 3.65v3.02h3.87c2.26-2.09 3.68-5.17 3.68-8.87z" /><path fill="#34A853" d="M12 24c3.31 0 6.08-1.1 8.11-2.97l-3.87-3.02c-1.1.74-2.51 1.18-4.24 1.18-3.26 0-6.02-2.2-7.01-5.16H1.02v3.13C3.06 21.05 7.21 24 12 24z" /><path fill="#FBBC05" d="M4.99 14.03A7.05 7.05 0 014.62 12c0-.71.13-1.4.37-2.03V6.84H1.02C.37 8.15 0 9.7 0 12s.37 3.85 1.02 5.16l3.97-3.13z" /><path fill="#EA4335" d="M12 4.79c1.8 0 3.42.62 4.7 1.83l3.53-3.53C18.07 1.1 15.3 0 12 0 7.21 0 3.06 2.95 1.02 6.84l3.97 3.13c.99-2.96 3.75-5.18 7.01-5.18z" /></svg>
-                    <span className="text-[15px]">Đăng nhập Google</span>
-                  </button>
-                </div>
+                {registerError && (
+                  <p className="text-red-500 text-[13.5px] font-medium">{registerError}</p>
+                )}
+                {registerSuccess && (
+                  <p className="text-green-600 text-[13.5px] font-medium">{registerSuccess}</p>
+                )}
 
-                <p className="text-[14px] text-gray-600 mt-1 leading-relaxed font-medium">
+                <p className="text-[14px] text-gray-600 leading-relaxed font-medium">
                   Dữ liệu cá nhân của bạn sẽ được sử dụng để xử lý đơn đặt hàng, hỗ trợ trải nghiệm của bạn trên toàn bộ trang web này và cho các mục đích khác được mô tả trong <a href="#" className="text-[#ea580c] font-bold hover:underline">chính sách riêng tư</a>.
                 </p>
 
                 <div className="mt-1">
-                  <button className="bg-gradient-to-b from-[#f5741c] to-[#e4511d] hover:to-[#cd4617] active:to-[#b63c11] text-white font-bold py-[14px] rounded shadow-[0_2px_10px_rgba(232,90,33,0.3)] min-w-[30%] uppercase tracking-wide text-sm flex items-center justify-center border border-[#e85a21]">
-                    ĐĂNG KÝ
+                  <button
+                    type="submit"
+                    disabled={registerLoading}
+                    className="bg-gradient-to-b from-[#f5741c] to-[#e4511d] hover:to-[#cd4617] active:to-[#b63c11] disabled:opacity-60 text-white font-bold py-[14px] rounded shadow-[0_2px_10px_rgba(232,90,33,0.3)] min-w-[30%] uppercase tracking-wide text-sm flex items-center justify-center border border-[#e85a21] px-10"
+                  >
+                    {registerLoading ? 'Đang gửi...' : 'ĐĂNG KÝ'}
                   </button>
                 </div>
-
-              </div>
+              </form>
             )}
           </div>
         </div>
