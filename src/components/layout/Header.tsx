@@ -1,15 +1,30 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import CartSidebar from './CartSidebar';
 import { SiNetflix, SiCanva } from 'react-icons/si';
 import { BiLogoAdobe } from 'react-icons/bi';
 import { FcGoogle } from 'react-icons/fc';
 import { FaBrain, FaShieldAlt, FaGamepad, FaSpotify } from 'react-icons/fa';
 import { BsMicrosoft } from 'react-icons/bs';
+import { useAuth } from '../../context/AuthContext';
 
 
 const Header = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const { user, logout, isLoggedIn } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const getDashboardLink = () => {
+    if (!user) return '/login';
+    if (user.role === 'ADMIN') return '/admin/dashboard';
+    if (user.role === 'SELLER') return '/seller/dashboard';
+    return '/profile';
+  };
   return (
     <header className="bg-[#1e2a4a] border-b border-blue-900/30 sticky top-0 z-50">
       {/* Top Bar */}
@@ -41,12 +56,32 @@ const Header = () => {
 
         {/* Login & Cart */}
         <div className="flex items-center gap-3">
-          <Link to="/auth" className="px-6 py-2.5 rounded-full border-2 border-blue-400 text-white flex items-center gap-2 bg-[#1e2a4a] hover:bg-[#2a3859] transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:shadow-[0_0_25px_rgba(59,130,246,0.8)]">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-            <span>Đăng nhập</span>
-          </Link>
+          {isLoggedIn ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to={getDashboardLink()}
+                className="px-4 py-2.5 rounded-full border-2 border-blue-400 text-white flex items-center gap-2 bg-[#1e2a4a] hover:bg-[#2a3859] transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+                <span className="max-w-[120px] truncate text-sm">{user?.fullName || user?.email}</span>
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2.5 rounded-full border-2 border-red-400/60 text-red-300 flex items-center gap-2 bg-[#1e2a4a] hover:bg-red-900/30 transition-all duration-300 text-sm"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          ) : (
+            <Link to="/auth" className="px-6 py-2.5 rounded-full border-2 border-blue-400 text-white flex items-center gap-2 bg-[#1e2a4a] hover:bg-[#2a3859] transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:shadow-[0_0_25px_rgba(59,130,246,0.8)]">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+              </svg>
+              <span>Đăng nhập</span>
+            </Link>
+          )}
           <button
             onClick={() => setIsCartOpen(true)}
             className="px-6 py-2.5 rounded-full border-2 border-blue-400 text-white flex items-center gap-2 bg-[#1e2a4a] hover:bg-[#2a3859] transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:shadow-[0_0_25px_rgba(59,130,246,0.8)]"

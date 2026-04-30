@@ -1,10 +1,18 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, Package, ShoppingCart, DollarSign, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const DashboardSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const isAdmin = location.pathname.startsWith('/admin');
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const adminLinks = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
@@ -45,10 +53,13 @@ const DashboardSidebar = () => {
         })}
       </nav>
       <div className="p-4 border-t border-base-300">
-        <Link to="/login" className="flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:bg-error/10 transition-colors">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:bg-error/10 transition-colors w-full"
+        >
           <LogOut size={20} />
-          Logout
-        </Link>
+          Đăng xuất
+        </button>
       </div>
     </aside>
   );

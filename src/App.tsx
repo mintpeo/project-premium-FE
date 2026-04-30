@@ -9,6 +9,7 @@ import Checkout from "./pages/Checkout";
 
 // Layout
 import DashboardLayout from "./components/layout/DashboardLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // New Pages
 import Login from "./pages/Login/Login";
@@ -28,25 +29,35 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/profile" element={<Profile />} />
         <Route path="/product" element={<ProductDetail />} />
         <Route path="/checkout" element={<Checkout />} />
         
         <Route path="/login" element={<Login />} />
         
-        {/* Dashboard Routes with Layout */}
-        <Route element={<DashboardLayout />}>
-          {/* Admin Routes */}
-          <Route path="/admin/dashboard" element={<Dashboard />} />
-          <Route path="/admin/users" element={<ManageUsers />} />
-          <Route path="/admin/products" element={<ManageProducts />} />
-          <Route path="/admin/orders" element={<ManageOrders />} />
+        {/* Protected Profile Route */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/profile" element={<Profile />} />
+        </Route>
+        
+        {/* Protected Dashboard Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<DashboardLayout />}>
+            {/* Admin Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+              <Route path="/admin/dashboard" element={<Dashboard />} />
+              <Route path="/admin/users" element={<ManageUsers />} />
+              <Route path="/admin/products" element={<ManageProducts />} />
+              <Route path="/admin/orders" element={<ManageOrders />} />
+            </Route>
 
-          {/* Seller Routes */}
-          <Route path="/seller/dashboard" element={<Dashboard />} />
-          <Route path="/seller/products" element={<MyProducts />} />
-          <Route path="/seller/revenue" element={<PersonalRevenue />} />
-          <Route path="/seller/orders" element={<ProcessOrders />} />
+            {/* Seller Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['SELLER']} />}>
+              <Route path="/seller/dashboard" element={<Dashboard />} />
+              <Route path="/seller/products" element={<MyProducts />} />
+              <Route path="/seller/revenue" element={<PersonalRevenue />} />
+              <Route path="/seller/orders" element={<ProcessOrders />} />
+            </Route>
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
