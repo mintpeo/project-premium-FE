@@ -29,7 +29,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/product" element={<ProductDetail />} />
+        <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path="/checkout" element={<Checkout />} />
         
         <Route path="/login" element={<Login />} />

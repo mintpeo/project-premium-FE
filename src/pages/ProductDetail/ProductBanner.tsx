@@ -1,7 +1,16 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { MessageCircle, ShoppingCart, ShieldCheck, Star, PackageCheck } from 'lucide-react';
+import '../Home/ProductBanner.css'
 
-const ProductBanner = () => {
+const ProductBanner = ({product}) => {
+
+  const [activeTypesIndex, setActiveTypesIndex] = useState(0);
+  const [activeDuraIndex, setActiveDurasIndex] = useState(0);
+
+  if (!product) {
+    return <div>Đang tải dữ liệu sản phẩm...</div>;
+  }
+
   return (
     <div className="relative w-full bg-[#1e293b] pt-6 pb-20 overflow-hidden">
       {/* Blurred Background Image */}
@@ -12,15 +21,15 @@ const ProductBanner = () => {
         <div className="text-[13px] text-gray-300 mb-6 flex items-center gap-1 font-medium">
           <span className="hover:text-white cursor-pointer transition">Trang chủ</span>
           <span className="opacity-50">/</span>
-          <span className="hover:text-white cursor-pointer transition">AI</span>
+          <span className="hover:text-white cursor-pointer transition">{product.categories}</span>
           <span className="opacity-50">/</span>
-          <span className="text-white">Tài khoản ChatGPT Plus 1 tháng riêng tư</span>
+          <span className="text-white">{product.name}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[340px_200px_1fr] gap-x-12 gap-y-8">
           {/* Column 1: Image */}
           <div className="w-full bg-[#cc55ff] rounded-2xl aspect-square flex items-center justify-center p-3 shadow-2xl overflow-hidden relative group">
-            <img src="https://picsum.photos/seed/chatgpt/800/800" className="w-full h-full object-cover rounded-xl shadow-inner group-hover:scale-105 transition duration-500" alt="ChatGPT Plus" />
+            <img src={product.img} className="w-full h-full object-cover rounded-xl shadow-inner group-hover:scale-105 transition duration-500" alt="ChatGPT Plus" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition">
               <span className="text-white font-bold text-xl tracking-wide drop-shadow-md">ChatGPT</span>
             </div>
@@ -32,14 +41,14 @@ const ProductBanner = () => {
               <div className="w-[38px] h-[38px] rounded-full bg-white/10 flex items-center justify-center shadow-inner">
                 <MessageCircle size={18} className="text-gray-200" />
               </div>
-              <span className="text-[14px] font-medium text-gray-100">0 Đánh giá từ khách hàng</span>
+              <span className="text-[14px] font-medium text-gray-100">{product.rating} Đánh giá từ khách hàng</span>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="w-[38px] h-[38px] rounded-full bg-white/10 flex items-center justify-center shadow-inner">
                 <ShoppingCart size={18} className="text-gray-200" />
               </div>
-              <span className="text-[14px] font-medium text-gray-100">402 Đã bán</span>
+              <span className="text-[14px] font-medium text-gray-100">{product.sold} Đã bán</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -57,7 +66,7 @@ const ProductBanner = () => {
                 <span className="text-[12px] text-gray-400 font-medium">Rating</span>
                 <div className="flex text-[#fbbf24] text-[15px] tracking-widest leading-none mt-0.5">
                   ★★★★★
-                  <span className="text-white ml-2 font-bold tracking-normal text-[14px]">5.00</span>
+                  <span className="text-white ml-2 font-bold tracking-normal text-[14px]">{product.rating.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -65,20 +74,55 @@ const ProductBanner = () => {
 
           {/* Column 3: Title, Price, Buy */}
           <div className="flex flex-col">
-            <h1 className="text-[26px] md:text-[32px] font-bold mb-4 leading-tight">Tài khoản ChatGPT Plus 1 tháng riêng tư</h1>
+            <h1 className="text-[26px] md:text-[32px] font-bold mb-4 leading-tight">{product.name}</h1>
             <div className="flex items-baseline gap-4 mb-6">
-              <span className="text-gray-400 line-through text-[16px] font-medium">599,000đ</span>
-              <span className="text-[34px] font-black text-white">249,000đ</span>
+              <span className="text-gray-400 line-through text-[16px] font-medium">{product.priceOri.toLocaleString()}đ</span>
+              <span className="text-[34px] font-black text-white">{product.price.toLocaleString()}đ</span>
             </div>
 
-            <div className="mb-6">
-              <p className="text-[14px] font-medium mb-3 text-gray-300">Loại</p>
-              <div className="flex flex-wrap gap-3">
-                <button className="px-5 py-2.5 bg-[#ea580c] rounded-full border-2 border-[#ea580c] text-sm font-bold shadow-lg shadow-orange-500/30">Gia hạn - Plus</button>
-                <button className="px-5 py-2.5 bg-white/5 rounded-full border-2 border-white/20 text-sm font-bold hover:bg-white/10 transition">Cấp mới - Plus</button>
-                <button className="px-5 py-2.5 bg-white/5 rounded-full border-2 border-white/20 text-sm font-bold hover:bg-white/10 transition">Member - 1 sub</button>
-              </div>
-            </div>
+            {/* TYPES USER */}
+            {
+              product.typesUser && product.typesUser.length > 0 ? (
+                  <div className="mb-6">
+                    <p className="text-[14px] font-medium mb-3 text-gray-300">GÓI ĐĂNG KÝ</p>
+                    <div className="flex flex-wrap gap-3">
+                      <ul className="list-item">
+                        {
+                          product.typesUser.map((types, index) => (
+                              <li className="item" key={index}>
+                                <button className={`px-5 py-2.5 ${activeTypesIndex === index ? "active" : ""}`}
+                                onClick={() => setActiveTypesIndex(index)}
+                                >{types}</button>
+                              </li>
+                          ))
+                        }
+                      </ul>
+                    </div>
+                  </div>
+              ) : (<></>)
+            }
+
+            {/* DURATION */}
+            {
+              product.duration && product.duration.length > 0 ? (
+                  <div className="mb-6">
+                    <p className="text-[14px] font-medium mb-3 text-gray-300">THỜI HẠN</p>
+                    <div className="flex flex-wrap gap-3">
+                      <ul className="list-item">
+                        {
+                          product.duration.map((dura, index) => (
+                              <li className="item">
+                                <button className={`px-5 py-2.5 ${activeDuraIndex === index ? "active" : ""}`}
+                                onClick={() => setActiveDurasIndex(index)}
+                                >{dura}</button>
+                              </li>
+                          ))
+                        }
+                      </ul>
+                    </div>
+                  </div>
+              ) : (<></>)
+            }
 
             <div className="flex flex-col sm:flex-row gap-4 mb-6 mt-2">
               <button className="flex-1 bg-[#22c55e] hover:bg-[#16a34a] text-white font-bold py-3.5 px-6 rounded-md shadow-lg shadow-green-500/20 flex items-center justify-center gap-2 transition uppercase tracking-wide text-[15px]">
