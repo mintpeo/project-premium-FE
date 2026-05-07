@@ -1,28 +1,17 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const NewProducts = () => {
+const NewProducts = ({newProducts}) => {
   const navigate = useNavigate();
-
-  const [newProducts, setNewProducts] = useState([]);
-  useEffect(() => {
-    const getAllProduct = async () => {
-      try {
-        const res = await fetch('http://localhost:8080/api/product/all');
-        const data = await res.json();
-        setNewProducts(data);
-      } catch(e) {
-        console.error("Error: Get All Product", e);
-      }
-    }
-
-    getAllProduct();
-  }, []);
 
   const calculateDiscountPercentage = (priceOri, price) => {
     let dis = priceOri - price;
     let per =  (dis / priceOri) * 100;
     return Math.trunc(per);
+  }
+
+  if (!newProducts) {
+    return <div>Đang tải dữ liệu sản phẩm...</div>;
   }
 
   return (
@@ -35,7 +24,7 @@ const NewProducts = () => {
 
         {/* Grid Container */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {newProducts.slice(8, 12).map((product) => (
+          {newProducts.slice(8, newProducts.length).map((product) => (
             <div key={product.id} onClick={() => navigate(`/product/${product.id}`)} className="bg-white rounded-2xl p-2 flex gap-3 shadow-[0_2px_10px_rgba(0,0,0,0.04)] hover:shadow-[0_5px_15px_rgba(0,0,0,0.08)] transition-shadow duration-300 relative group cursor-pointer border border-gray-100/50">
               
               {/* Product Image Box */}

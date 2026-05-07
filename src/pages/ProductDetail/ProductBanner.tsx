@@ -1,11 +1,49 @@
 import React, {useState} from 'react';
 import { MessageCircle, ShoppingCart, ShieldCheck, Star, PackageCheck } from 'lucide-react';
-import '../Home/ProductBanner.css'
+import './ProductBanner.css'
 
 const ProductBanner = ({product}) => {
+  const userData = localStorage.getItem("auth_user");
+  const user = JSON.parse(userData);
 
   const [activeTypesIndex, setActiveTypesIndex] = useState(0);
   const [activeDuraIndex, setActiveDurasIndex] = useState(0);
+
+  const [typesText, setTypesText] = useState("");
+  const [duraText, setDuraText] = useState("");
+
+  // Add To Cart
+  const addToCart = async () => {
+
+    // Co du lieu
+    if (product?.duration && product.duration.length > 0) {
+      if (!duraText) setDuraText(product.duration[0]); // ng dung ko chon
+    } else setDuraText("");
+
+    if (product?.types && product.types.length > 0) {
+      if (!typesText) setTypesText(product.types[0]);
+    } else setTypesText("");
+
+    const body = {
+      "userId": user.id,
+      "productId": product.id,
+      "quantity": 1,
+      "duration": duraText,
+      "typeUser": typesText
+    }
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/cart/addToCart`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+
+      if (res.ok) window.location.reload();
+    } catch (e) {
+      console.log("Error: Add To Cart", e);
+    }
+  }
 
   if (!product) {
     return <div>Đang tải dữ liệu sản phẩm...</div>;
@@ -91,8 +129,10 @@ const ProductBanner = ({product}) => {
                           product.typesUser.map((types, index) => (
                               <li className="item" key={index}>
                                 <button className={`px-5 py-2.5 ${activeTypesIndex === index ? "active" : ""}`}
-                                onClick={() => setActiveTypesIndex(index)}
-                                >{types}</button>
+                                onClick={() => {
+                                  setActiveTypesIndex(index);
+                                  setTypesText(types);
+                                }}>{types}</button>
                               </li>
                           ))
                         }
@@ -129,7 +169,8 @@ const ProductBanner = ({product}) => {
                 <PackageCheck size={20} />
                 Mua Ngay
               </button>
-              <button className="flex-1 bg-[#ea580c] hover:bg-[#c2410b] text-white font-bold py-3.5 px-6 rounded-md shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition uppercase tracking-wide text-[15px]">
+              <button className="flex-1 bg-[#ea580c] hover:bg-[#c2410b] text-white font-bold py-3.5 px-6 rounded-md shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition uppercase tracking-wide text-[15px]"
+              onClick={() => addToCart()}>
                 <ShoppingCart size={20} />
                 Thêm vào giỏ
               </button>

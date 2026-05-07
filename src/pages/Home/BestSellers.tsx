@@ -1,28 +1,17 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const BestSellers = () => {
+const BestSellers = ({products}) => {
   const navigate = useNavigate();
-
-  const [products, setProducts] = useState([]);
-  useEffect(() => {
-    const getAllProduct = async () => {
-      try {
-        const res = await fetch('http://localhost:8080/api/product/all');
-        const data = await res.json();
-        setProducts(data);
-      } catch(e) {
-        console.error("Error: Get All Product", e);
-      }
-    }
-
-    getAllProduct();
-  }, []);
 
   const calculateDiscountPercentage = (priceOri, price) => {
     let dis = priceOri - price;
     let per =  (dis / priceOri) * 100;
     return Math.trunc(per);
+  }
+
+  if (!products) {
+    return <div>Đang tải dữ liệu sản phẩm...</div>;
   }
 
   return (
