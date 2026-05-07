@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export interface CartItem {
@@ -14,42 +14,75 @@ interface CartSidebarProps {
   onClose: () => void;
 }
 
-const initialCart: CartItem[] = [
-  {
-    id: 1,
-    name: "Tài khoản Netflix Premium (1 Tháng)",
-    price: 89000,
-    quantity: 1,
-    image: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
-  },
-  {
-    id: 2,
-    name: "Youtube Premium (Nâng cấp tài khoản chính chủ 6 tháng)",
-    price: 180000,
-    quantity: 2,
-    image: "https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg",
-  }
-];
-
 const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
   const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState<CartItem[]>(initialCart);
+  // const [cartItems, setCartItems] = useState<CartItem[]>(initialCart);
+  const dataLocalSto = localStorage.getItem('auth_user');
+  const user = JSON.parse(dataLocalSto);
+  const [cartItems, setCartItems] = useState([]);
 
-  const updateQuantity = (id: number, delta: number) => {
-    setCartItems(prev => prev.map(item => {
-      if (item.id === id) {
-        const newQuantity = Math.max(1, item.quantity + delta);
-        return { ...item, quantity: newQuantity };
+  useEffect(() => {
+    const getYourCart = async () => {
+      try {
+        const res = await fetch(`http://localhost:8080/api/cart/${user.id}`);
+        const data = await res.json();
+        setCartItems(data);
+      } catch(e) {
+        console.error("Error: Get Your Cart", e);
       }
-      return item;
-    }));
+    }
+
+    getYourCart();
+  }, []);
+
+  const updateQuantity = async (id: number, delta: number) => {
+    let newQuantity = 0;
+    let found = false;
+
+    cartItems.forEach((item) => {
+      if (item.id === id) {
+        newQuantity = Math.max(1, item.quantity + delta);
+        found = true;
+      }
+    });
+
+    if (!found) return;
+    setCartItems(prev => prev.map(item =>
+        item.id === id ? { ...item, quantity: newQuantity } : item
+    ));
+    // setCartItems(prev => prev.map(item => {
+    //   if (item.productId === id) {
+    //     newQuantity = Math.max(1, item.quantity + delta);
+    //     console.log("if ",newQuantity)
+    //     return { ...item, quantity: newQuantity };
+    //   }
+    //   return item;
+    // }));
+
+    // Save In Database
+    try {
+      await fetch(`http://localhost:8080/api/cart/updateQuantity?cartItemId=${id}&quantity=${newQuantity}`, {
+        method: "PATCH"
+      });
+    } catch (e) {
+      console.log("Error: Update Quantity", e);
+    }
   };
 
-  const removeItem = (id: number) => {
+  console.log(cartItems)
+
+  const removeItem = async (id: number) => {
     setCartItems(prev => prev.filter(item => item.id !== id));
+    try {
+      await fetch(`http://localhost:8080/api/cart/delete?cartItemId=${id}`, {
+        method: "DELETE"
+      });
+    } catch (e) {
+      console.log("Error: Delete Quantity", e);
+    }
   };
 
-  const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = cartItems.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
 
   if (!isOpen) return null;
 
@@ -91,12 +124,12 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
             cartItems.map(item => (
               <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                 <div className="w-24 h-24 bg-white rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-contain p-2" />
+                  <img src={item.productImg} alt={item.productName} className="w-full h-full object-contain p-2" />
                 </div>
 
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="flex justify-between items-start">
-                    <h3 className="text-base font-semibold text-gray-800 line-clamp-2 pr-4">{item.name}</h3>
+                    <h3 className="text-base font-semibold text-gray-800 line-clamp-2 pr-4">{item.productName}</h3>
                     <button
                       onClick={() => removeItem(item.id)}
                       className="text-gray-400 hover:text-red-500 transition shrink-0 bg-white p-1 rounded-md border border-gray-200 shadow-sm hover:border-red-200"
@@ -108,7 +141,18 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                   </div>
 
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-blue-600 font-bold text-lg">{item.price.toLocaleString('vi-VN')}đ</span>
+                    {
+                      item.duration && item.duration.length > 0 ? (
+                          <span className="text-blue-600 font-bold text-lg">{item.duration}</span>
+                      ) : (<></>)
+                    }
+
+                    {
+                      item.typeUser && item.typeUser.length > 0 ? (
+                          <span className="text-blue-600 font-bold text-lg">{item.typeUser}</span>
+                      ) : (<></>)
+                    }
+                    <span className="text-blue-600 font-bold text-lg">{item.productPrice.toLocaleString('vi-VN')}đ</span>
 
                     <div className="flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden shadow-sm">
                       <button
@@ -117,7 +161,7 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                       >
                         -
                       </button>
-                      <span className="px-3 py-1 text-sm font-medium border-x border-gray-300 min-w-[40px] text-center bg-gray-50">
+                      <span style={{color: "black"}} className="px-3 py-1 text-sm co font-medium border-x border-gray-300 min-w-[40px] text-center bg-gray-50">
                         {item.quantity}
                       </span>
                       <button
