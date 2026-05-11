@@ -275,7 +275,7 @@ const Profile = () => {
                     value={editForm.fullName}
                     onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] text-gray-800 focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -284,7 +284,7 @@ const Profile = () => {
                     type="tel"
                     value={editForm.phoneNumber}
                     onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] text-gray-800 focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div className="flex gap-3 pt-2">
@@ -320,7 +320,7 @@ const Profile = () => {
                     value={passwordForm.currentPassword}
                     onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] text-gray-800 focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -333,7 +333,7 @@ const Profile = () => {
                     onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                     required
                     minLength={6}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] text-gray-800 focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -345,7 +345,7 @@ const Profile = () => {
                     value={passwordForm.confirmPassword}
                     onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] text-gray-800 focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div className="flex gap-3 pt-2">

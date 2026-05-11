@@ -110,47 +110,47 @@ const Header = () => {
 
           {/* Brand Icons */}
           <div className="flex items-center justify-between flex-1">
-            <button className="flex items-center gap-2 cursor-pointer hover:opacity-80">
+            <button onClick={() => navigate('/category/netflix')} className="flex items-center gap-2 cursor-pointer hover:opacity-80">
               <SiNetflix className="h-6 w-auto text-[#E50914]" />
               <span className="text-sm font-medium text-white">Netflix</span>
             </button>
 
-            <button className="flex items-center gap-2 cursor-pointer hover:opacity-80">
+            <button onClick={() => navigate('/category/adobe')} className="flex items-center gap-2 cursor-pointer hover:opacity-80">
               <BiLogoAdobe className="h-6 w-auto text-[#FF0000]" />
               <span className="text-sm font-medium text-white">Adobe</span>
             </button>
 
-            <button className="flex items-center gap-2 text-gray-300 hover:text-white transition">
+            <button onClick={() => navigate('/category/google')} className="flex items-center gap-2 text-gray-300 hover:text-white transition">
               <FcGoogle className="h-6 w-auto" />
               <span className="text-sm font-medium text-white">Google</span>
             </button>
 
-            <button className="flex items-center gap-2 cursor-pointer hover:opacity-80">
+            <button onClick={() => navigate('/category/microsoft')} className="flex items-center gap-2 cursor-pointer hover:opacity-80">
               <BsMicrosoft className="h-6 w-auto text-[#00A4EF]" />
               <span className="text-sm font-medium text-white">Microsoft</span>
             </button>
 
-            <button className="flex items-center gap-2 cursor-pointer hover:opacity-80">
+            <button onClick={() => navigate('/category/spotify')} className="flex items-center gap-2 cursor-pointer hover:opacity-80">
               <FaSpotify className="h-6 w-auto text-[#1DB954]" />
               <span className="text-sm font-medium text-white">Spotify</span>
             </button>
 
-            <button className="flex items-center gap-2 cursor-pointer hover:opacity-80">
+            <button onClick={() => navigate('/category/canva')} className="flex items-center gap-2 cursor-pointer hover:opacity-80">
               <SiCanva className="h-6 w-auto text-[#00C4CC]" />
               <span className="text-sm font-medium text-white">Canva</span>
             </button>
 
-            <button className="flex items-center gap-2 text-gray-300 hover:text-white transition">
+            <button onClick={() => navigate('/category/ai')} className="flex items-center gap-2 text-gray-300 hover:text-white transition">
               <FaBrain className="h-6 w-auto text-blue-500" />
               <span className="text-sm font-medium text-white">AI</span>
             </button>
 
-            <button className="flex items-center gap-2 text-gray-300 hover:text-white transition">
+            <button onClick={() => navigate('/category/bao-mat')} className="flex items-center gap-2 text-gray-300 hover:text-white transition">
               <FaShieldAlt className="h-6 w-auto text-green-500" />
               <span className="text-sm font-medium text-white">Bảo mật</span>
             </button>
 
-            <button className="flex items-center gap-2 text-gray-300 hover:text-white transition">
+            <button onClick={() => navigate('/category/games')} className="flex items-center gap-2 text-gray-300 hover:text-white transition">
               <FaGamepad className="h-6 w-auto text-green-500" />
               <span className="text-sm font-medium text-white">Games</span>
             </button>

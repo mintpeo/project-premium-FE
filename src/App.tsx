@@ -6,6 +6,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import ProductDetail from "./pages/ProductDetail/ProductDetail";
 import Checkout from "./pages/Checkout";
+import CategoryPage from "./pages/CategoryPage/CategoryPage";
 
 // Layout
 import DashboardLayout from "./components/layout/DashboardLayout";
@@ -30,6 +31,7 @@ function App() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
+        <Route path="/category/:category" element={<CategoryPage />} />
         <Route path="/checkout" element={<Checkout />} />
         
         <Route path="/login" element={<Login />} />

@@ -44,19 +44,19 @@ const Checkout = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700">Họ và tên *</label>
-                  <input type="text" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập họ tên" />
+                  <input type="text" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none transition text-gray-800 placeholder-gray-400" placeholder="Nhập họ tên" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700">Số điện thoại *</label>
-                  <input type="tel" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập số điện thoại" />
+                  <input type="tel" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none transition text-gray-800 placeholder-gray-400" placeholder="Nhập số điện thoại" />
                 </div>
                 <div className="col-span-1 md:col-span-2 space-y-1">
                   <label className="text-sm font-medium text-gray-700">Email *</label>
-                  <input type="email" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập địa chỉ email" />
+                  <input type="email" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none transition text-gray-800 placeholder-gray-400" placeholder="Nhập địa chỉ email" />
                 </div>
                 <div className="col-span-1 md:col-span-2 space-y-1">
                   <label className="text-sm font-medium text-gray-700">Ghi chú (Tùy chọn)</label>
-                  <textarea rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Ghi chú thêm về đơn hàng..."></textarea>
+                  <textarea rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-1 focus:ring-gray-400 outline-none transition text-gray-800 placeholder-gray-400" placeholder="Ghi chú thêm về đơn hàng..."></textarea>
                 </div>
               </div>
             </div>
