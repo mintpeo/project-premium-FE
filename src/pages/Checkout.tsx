@@ -1,34 +1,100 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import {useNavigate} from "react-router-dom";
+import './Checkout.css';
 
 // MOCK DATA for presentation
-const mockCartItems = [
-  {
-    id: 1,
-    name: "Tài khoản Netflix Premium (1 Tháng)",
-    price: 89000,
-    quantity: 1,
-    image: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
-  },
-  {
-    id: 2,
-    name: "Youtube Premium (Nâng cấp tài khoản chính chủ 6 tháng)",
-    price: 180000,
-    quantity: 2,
-    image: "https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg",
-  }
-];
+// const mockCartItems = [
+//   {
+//     id: 1,
+//     name: "Tài khoản Netflix Premium (1 Tháng)",
+//     price: 89000,
+//     quantity: 1,
+//     image: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
+//   },
+//   {
+//     id: 2,
+//     name: "Youtube Premium (Nâng cấp tài khoản chính chủ 6 tháng)",
+//     price: 180000,
+//     quantity: 2,
+//     image: "https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg",
+//   }
+// ];
 
 const Checkout = () => {
+  const dataLocalSto = localStorage.getItem('auth_user');
+  const user = JSON.parse(dataLocalSto);
+  const navigate = useNavigate();
+
+  const [mockCartItems, setCartItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState('bank');
-  const totalAmount = mockCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const [note, setNote] = useState("");
+
+  // check out
+  const checkOut = async () => {
+    const items = mockCartItems.map(item => ({
+      "productId": item.productId,
+      "quantity": item.quantity,
+      "typeUser": item.typeUser || "",
+      "duration": item.duration || ""
+    }));
+
+    const body = {
+      "orderInfo": {
+        "userId": user.id,
+        "fullName": fullName,
+        "phoneNumber": phoneNumber,
+        "paymentMethod": paymentMethod,
+        "paymentStatus": "PENDING",
+        "orderStatus": "PROCESSING",
+        "note": note,
+        "totalPrice": totalAmount
+      },
+      "items": items
+    }
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/order/add`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) navigate("/");
+    } catch(e) {
+      console.error("Error: Add Order", e);
+    }
+  }
+
+  useEffect(() => {
+    const getYourCart = async () => {
+      try {
+        const res = await fetch(`http://localhost:8080/api/cart/${user.id}`);
+        const data = await res.json();
+        setCartItems(data);
+        setIsLoading(false);
+      } catch(e) {
+        console.error("Error: Get Mock Cart Item", e);
+      }
+    }
+
+    getYourCart();
+  }, []);
+
+  const totalAmount = mockCartItems.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
+
+  if (isLoading) return (<div>Loading Mock Cart Item...</div>)
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F0F4FF] font-sans">
       <Header />
       
-      <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 py-8">
+      <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Thanh toán</h1>
         
         <div className="flex flex-col lg:flex-row gap-8">
@@ -44,11 +110,11 @@ const Checkout = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700">Họ và tên *</label>
-                  <input type="text" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập họ tên" />
+                  <input onChange={(e) => setFullName(e.target.value)} type="text" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập họ tên" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700">Số điện thoại *</label>
-                  <input type="tel" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập số điện thoại" />
+                  <input onChange={(e) => setPhoneNumber(e.target.value)} type="tel" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập số điện thoại" />
                 </div>
                 <div className="col-span-1 md:col-span-2 space-y-1">
                   <label className="text-sm font-medium text-gray-700">Email *</label>
@@ -56,7 +122,7 @@ const Checkout = () => {
                 </div>
                 <div className="col-span-1 md:col-span-2 space-y-1">
                   <label className="text-sm font-medium text-gray-700">Ghi chú (Tùy chọn)</label>
-                  <textarea rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Ghi chú thêm về đơn hàng..."></textarea>
+                  <textarea onChange={(e) => setNote(e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Ghi chú thêm về đơn hàng..."></textarea>
                 </div>
               </div>
             </div>
@@ -113,21 +179,29 @@ const Checkout = () => {
           </div>
 
           {/* Right Column: Order Summary */}
-          <div className="w-full lg:w-[400px]">
+          <div className="w-full lg:w-[500px]">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-6">
               <h2 className="text-xl font-bold text-gray-800 mb-6">Đơn hàng của bạn</h2>
               
               <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
                 {mockCartItems.map(item => (
-                  <div key={item.id} className="flex gap-4">
+                  <div key={item.productId} className="item-detail flex gap-4" onClick={() => navigate(`/product/${item.productId}`)}>
                     <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-contain p-2" />
+                      <img src={item.productImg} alt={item.productName} className="w-full h-full object-contain p-2" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-medium text-gray-800 line-clamp-2">{item.name}</h3>
+                      <h3 className="text-sm font-medium text-gray-800 line-clamp-2">{item.productName}</h3>
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs text-gray-500">SL: {item.quantity}</span>
-                        <span className="text-sm font-bold text-gray-800">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</span>
+                        <span className="text-xs text-gray-500">SL: <b>{item.quantity}</b></span>
+                        {item.duration && item.duration.length > 0 ? (
+                            <span className="text-xs text-gray-500">Thời hạn: <b>{item.duration}</b></span>
+                        ) : (<></>)}
+
+                        {item.typeUser && item.typeUser.length > 0 ? (
+                            <span className="text-xs text-gray-500">Loại: <b>{item.typeUser}</b></span>
+                        ) : (<></>)}
+
+                        <span className="text-sm font-bold text-gray-800">{(item.productPrice * item.quantity).toLocaleString('vi-VN')}đ</span>
                       </div>
                     </div>
                   </div>
@@ -149,7 +223,9 @@ const Checkout = () => {
                 </div>
               </div>
 
-              <button className="w-full bg-gradient-to-r from-[#ff7f00] to-[#e65c00] text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:from-orange-500 hover:to-orange-700 transition duration-300 transform hover:-translate-y-1">
+              <button
+                  onClick={() => checkOut()}
+                  className="w-full bg-gradient-to-r from-[#ff7f00] to-[#e65c00] text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:from-orange-500 hover:to-orange-700 transition duration-300 transform hover:-translate-y-1">
                 ĐẶT HÀNG NGAY
               </button>
               
