@@ -20,7 +20,7 @@ const Header = () => {
   };
 
   const getDashboardLink = () => {
-    if (!user) return '/login';
+    if (!user) return '/auth';
     if (user.role === 'ADMIN') return '/admin/dashboard';
     if (user.role === 'SELLER') return '/seller/dashboard';
     return '/profile';
@@ -67,12 +67,6 @@ const Header = () => {
                 </svg>
                 <span className="max-w-[120px] truncate text-sm">{user?.fullName || user?.email}</span>
               </Link>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2.5 rounded-full border-2 border-red-400/60 text-red-300 flex items-center gap-2 bg-[#1e2a4a] hover:bg-red-900/30 transition-all duration-300 text-sm"
-              >
-                Đăng xuất
-              </button>
             </div>
           ) : (
             <Link to="/auth" className="px-6 py-2.5 rounded-full border-2 border-blue-400 text-white flex items-center gap-2 bg-[#1e2a4a] hover:bg-[#2a3859] transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:shadow-[0_0_25px_rgba(59,130,246,0.8)]">
