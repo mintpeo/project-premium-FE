@@ -52,7 +52,8 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
 
     try {
       await fetch(`http://localhost:8080/api/cart/updateQuantity?cartItemId=${id}&quantity=${newQuantity}`, {
-        method: "PATCH"
+        method: "PATCH",
+        headers: { 'Content-Type': 'application/json' }
       });
     } catch (e) {
       console.log("Error: Update Quantity", e);

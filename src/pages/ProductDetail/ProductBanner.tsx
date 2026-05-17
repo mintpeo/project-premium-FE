@@ -14,24 +14,19 @@ const ProductBanner = ({product}) => {
   const [typesText, setTypesText] = useState("");
   const [duraText, setDuraText] = useState("");
 
+  console.log(product);
+
   // Add To Cart
   const addToCart = async () => {
-
-    // Co du lieu
-    if (product?.duration && product.duration.length > 0) {
-      if (!duraText) setDuraText(product.duration[0]); // ng dung ko chon
-    } else setDuraText("");
-
-    if (product?.types && product.types.length > 0) {
-      if (!typesText) setTypesText(product.types[0]);
-    } else setTypesText("");
+    const finalType = typesText || product.typesUser[0]; // ko co typesText thi product.typesUser[0]
+    const finalDura = duraText || product.duration[0];
 
     const body = {
       "userId": user.id,
       "productId": product.id,
       "quantity": 1,
-      "duration": duraText,
-      "typeUser": typesText
+      "duration": finalDura,
+      "typeUser": finalType
     }
 
     try {
@@ -155,8 +150,10 @@ const ProductBanner = ({product}) => {
                           product.duration.map((dura, index) => (
                               <li className="item">
                                 <button className={`px-5 py-2.5 ${activeDuraIndex === index ? "active" : ""}`}
-                                onClick={() => setActiveDurasIndex(index)}
-                                >{dura}</button>
+                                onClick={() => {
+                                  setActiveDurasIndex(index);
+                                  setDuraText(dura);
+                                }}>{dura}</button>
                               </li>
                           ))
                         }
