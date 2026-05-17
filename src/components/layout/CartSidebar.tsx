@@ -21,7 +21,7 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
   const [cartItems, setCartItems] = useState([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isOpen) return;
     const getYourCart = async () => {
       try {
         const res = await fetch(`http://localhost:8080/api/cart/${user.id}`);
@@ -32,7 +32,7 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
       }
     }
     getYourCart();
-  }, []);
+  }, [isOpen]); // fetch lại mỗi khi mở sidebar
 
   const updateQuantity = async (id: number, delta: number) => {
     let newQuantity = 0;

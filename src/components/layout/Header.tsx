@@ -7,10 +7,11 @@ import { FcGoogle } from 'react-icons/fc';
 import { FaBrain, FaShieldAlt, FaGamepad, FaSpotify } from 'react-icons/fa';
 import { BsMicrosoft } from 'react-icons/bs';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 
 
 const Header = () => {
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { isCartOpen, openCart, closeCart } = useCart();
   const { user, logout, isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
@@ -83,7 +84,7 @@ const Header = () => {
             </Link>
           )}
           <button
-            onClick={() => setIsCartOpen(true)}
+            onClick={openCart}
             className="px-6 py-2.5 rounded-full border-2 border-blue-400 text-white flex items-center gap-2 bg-[#1e2a4a] hover:bg-[#2a3859] transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:shadow-[0_0_25px_rgba(59,130,246,0.8)]"
           >
             <span>Giỏ hàng</span>
@@ -159,7 +160,7 @@ const Header = () => {
       </div>
 
       {/* Cart Sidebar Component */}
-      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <CartSidebar isOpen={isCartOpen} onClose={closeCart} />
     </header>
   );
 };

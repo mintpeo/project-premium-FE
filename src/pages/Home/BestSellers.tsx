@@ -1,8 +1,10 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
+import useAddToCart from '../../hooks/useAddToCart';
 
 const BestSellers = ({products}) => {
   const navigate = useNavigate();
+  const { addToCart, addedId } = useAddToCart();
 
   const calculateDiscountPercentage = (priceOri, price) => {
     let dis = priceOri - price;
@@ -75,10 +77,23 @@ const BestSellers = ({products}) => {
                   </div>
                   
                   {/* Neon Cart Button */}
-                  <button onClick={(e) => e.stopPropagation()} className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center text-white shadow-[0_0_12px_rgba(74,222,128,0.7)] hover:shadow-[0_0_15px_rgba(74,222,128,1)] hover:scale-110 transition-all duration-300 flex-shrink-0">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
+                  <button
+                    onClick={(e) => addToCart(product.id, e)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white transition-all duration-300 flex-shrink-0 hover:scale-110
+                      ${addedId === product.id
+                        ? 'bg-green-600 shadow-[0_0_12px_rgba(22,163,74,0.8)]'
+                        : 'bg-gradient-to-br from-green-400 to-green-500 shadow-[0_0_12px_rgba(74,222,128,0.7)] hover:shadow-[0_0_15px_rgba(74,222,128,1)]'
+                      }`}
+                  >
+                    {addedId === product.id ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
