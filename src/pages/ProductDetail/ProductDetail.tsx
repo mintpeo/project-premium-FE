@@ -39,7 +39,7 @@ const ProductDetail = () => {
           <ProductPolicy />
           <ProductDescription />
           <ProductInfo />
-          <ProductReviews />
+          <ProductReviews productId={Number(productId)} />
         </div>
       </main>
 

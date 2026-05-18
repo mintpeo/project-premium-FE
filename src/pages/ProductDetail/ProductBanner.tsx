@@ -1,8 +1,10 @@
 import React, {useState} from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageCircle, ShoppingCart, ShieldCheck, Star, PackageCheck } from 'lucide-react';
 import './ProductBanner.css'
 
 const ProductBanner = ({product}) => {
+  const navigate = useNavigate();
   const userData = localStorage.getItem("auth_user");
   const user = JSON.parse(userData);
 
@@ -162,7 +164,9 @@ const ProductBanner = ({product}) => {
             }
 
             <div className="flex flex-col sm:flex-row gap-4 mb-6 mt-2">
-              <button className="flex-1 bg-[#22c55e] hover:bg-[#16a34a] text-white font-bold py-3.5 px-6 rounded-md shadow-lg shadow-green-500/20 flex items-center justify-center gap-2 transition uppercase tracking-wide text-[15px]">
+              <button
+                onClick={() => navigate('/checkout', { state: { product, type: 'main' } })}
+                className="flex-1 bg-[#22c55e] hover:bg-[#16a34a] text-white font-bold py-3.5 px-6 rounded-md shadow-lg shadow-green-500/20 flex items-center justify-center gap-2 transition uppercase tracking-wide text-[15px]">
                 <PackageCheck size={20} />
                 Mua Ngay
               </button>
