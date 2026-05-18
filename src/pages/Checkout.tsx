@@ -65,9 +65,20 @@ const Checkout = () => {
         body: JSON.stringify(body)
       });
 
-      if (res.ok) navigate("/");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+        } else {
+          navigate("/");
+        }
+      } else {
+        const errorData = await res.json();
+        alert("Lỗi tạo đơn hàng: " + (errorData.error || "Không rõ nguyên nhân"));
+      }
     } catch(e) {
       console.error("Error: Add Order", e);
+      alert("Đã có lỗi xảy ra khi kết nối với máy chủ.");
     }
   }
 
@@ -110,19 +121,19 @@ const Checkout = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700">Họ và tên *</label>
-                  <input onChange={(e) => setFullName(e.target.value)} type="text" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập họ tên" />
+                  <input onChange={(e) => setFullName(e.target.value)} type="text" className="w-full px-4 py-3 rounded-xl text-gray-900 border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập họ tên" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700">Số điện thoại *</label>
-                  <input onChange={(e) => setPhoneNumber(e.target.value)} type="tel" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập số điện thoại" />
+                  <input onChange={(e) => setPhoneNumber(e.target.value)} type="tel" className="w-full px-4 py-3 rounded-xl text-gray-900 border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập số điện thoại" />
                 </div>
                 <div className="col-span-1 md:col-span-2 space-y-1">
                   <label className="text-sm font-medium text-gray-700">Email *</label>
-                  <input type="email" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập địa chỉ email" />
+                  <input type="email" className="w-full px-4 py-3 rounded-xl text-gray-900 border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập địa chỉ email" />
                 </div>
                 <div className="col-span-1 md:col-span-2 space-y-1">
                   <label className="text-sm font-medium text-gray-700">Ghi chú (Tùy chọn)</label>
-                  <textarea onChange={(e) => setNote(e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Ghi chú thêm về đơn hàng..."></textarea>
+                  <textarea onChange={(e) => setNote(e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl text-gray-900 border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Ghi chú thêm về đơn hàng..."></textarea>
                 </div>
               </div>
             </div>

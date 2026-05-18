@@ -20,6 +20,8 @@ import ManageOrders from "./pages/AdminPages/ManageOrders";
 import MyProducts from "./pages/SellerPages/MyProducts";
 import PersonalRevenue from "./pages/SellerPages/PersonalRevenue";
 import ProcessOrders from "./pages/SellerPages/ProcessOrders";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancel from "./pages/PaymentCancel";
 
 function App() {
   return (
@@ -33,6 +35,10 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
         
         <Route path="/login" element={<Login />} />
+        
+        {/* Payment Routes */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/cancel" element={<PaymentCancel />} />
         
         {/* Protected Profile Route */}
         <Route element={<ProtectedRoute />}>

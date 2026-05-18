@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import FloatingActions from '../components/layout/FloatingActions';
@@ -20,6 +20,7 @@ interface OrderItemResponse {
     quantity: number;
     price: number;
     productImg: string;
+    keyCode?: string;
 }
 
 interface OrderResponse {
@@ -33,6 +34,7 @@ interface OrderResponse {
 const Profile = () => {
     const {user, logout, isLoggedIn} = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState<'overview' | 'order' | 'edit' | 'password'>('overview');
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
@@ -54,6 +56,17 @@ const Profile = () => {
         confirmPassword: '',
     });
     const [passwordLoading, setPasswordLoading] = useState(false);
+
+    const [showKeyForOrder, setShowKeyForOrder] = useState<string | null>(null);
+
+    useEffect(() => {
+        // If navigating from PaymentSuccess, switch to order tab
+        if (location.state && location.state.tab === 'order') {
+            setActiveTab('order');
+            // clear location state to avoid switching back on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     useEffect(() => {
         if (!isLoggedIn || !user) {
@@ -131,6 +144,27 @@ const Profile = () => {
             setError('Không thể tải danh sách đơn hàng. Vui lòng thử lại.');
         } finally {
             setOrderLoading(false);
+        }
+    };
+
+    const handleCancelOrder = async (orderId: string) => {
+        if (!window.confirm("Bạn có chắc chắn muốn huỷ đơn hàng này không?")) return;
+        try {
+            const res = await fetch(`http://localhost:8080/api/order/cancel/${orderId}`, {
+                method: 'PUT'
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert("Đã huỷ đơn hàng thành công");
+                if (orderStatus) {
+                    handleFetchOrders(orderStatus as 'PENDING' | 'PROCESSING' | 'SUCCESS');
+                }
+                fetchOrderCounts();
+            } else {
+                alert("Lỗi: " + (data.error || "Không thể huỷ đơn hàng"));
+            }
+        } catch (error) {
+            alert("Đã có lỗi xảy ra khi kết nối với máy chủ.");
         }
     };
 
@@ -481,6 +515,13 @@ const Profile = () => {
                                         </div>
                                         {/* Nút hành động tương tác */}
                                         <div className="space-x-2">
+                                            {(order.status === 'PENDING' || order.status === 'PROCESSING') && (
+                                                <button
+                                                    onClick={() => handleCancelOrder(order.orderId)}
+                                                    className="px-4 py-2 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50">
+                                                    Huỷ đơn
+                                                </button>
+                                            )}
                                             <button
                                                 className="px-4 py-2 text-xs border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50">
                                                 Liên hệ hỗ trợ
@@ -488,12 +529,37 @@ const Profile = () => {
                                             {/* Chỉ hiện nút xem Mật khẩu / Key nếu đơn hàng đã giao thành công */}
                                             {order.status === 'SUCCESS' && (
                                                 <button
+                                                    onClick={() => setShowKeyForOrder(showKeyForOrder === order.orderId ? null : order.orderId)}
                                                     className="px-4 py-2 text-xs bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-sm">
-                                                    Xem mật khẩu / Key
+                                                    {showKeyForOrder === order.orderId ? 'Đóng' : 'Xem mật khẩu / Key'}
                                                 </button>
                                             )}
                                         </div>
                                     </div>
+                                    
+                                    {/* Hiển thị Key code nếu user click Xem */}
+                                    {showKeyForOrder === order.orderId && order.status === 'SUCCESS' && (
+                                        <div className="mt-4 pt-4 border-t border-gray-100 bg-gray-50 rounded-lg p-4">
+                                            <h4 className="text-sm font-semibold text-gray-800 mb-3">Thông tin Key / Tài khoản</h4>
+                                            {order.items && order.items.map((item, idx) => (
+                                                <div key={idx} className="mb-2 last:mb-0 flex items-center justify-between bg-white p-3 border border-gray-200 rounded text-sm">
+                                                    <span className="text-gray-600 font-medium truncate flex-1">{item.productName}</span>
+                                                    <div className="ml-4 flex items-center gap-2">
+                                                        <span className="font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                                            {item.keyCode ? item.keyCode : 'Chưa có Key'}
+                                                        </span>
+                                                        <button 
+                                                            onClick={() => item.keyCode && navigator.clipboard.writeText(item.keyCode)}
+                                                            className="text-gray-400 hover:text-blue-600 transition"
+                                                            title="Sao chép"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </>
