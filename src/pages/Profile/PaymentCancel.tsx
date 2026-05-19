@@ -1,11 +1,32 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
+import React, { useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
 import { XCircle } from 'lucide-react';
 
 const PaymentCancel = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const hasCalledAPI = useRef(false);
+
+    useEffect(() => {
+        const orderCode = searchParams.get('orderCode');
+
+        if (orderCode && !hasCalledAPI.current) {
+            hasCalledAPI.current = true;
+
+            fetch(`http://localhost:8080/api/order/cancel/${orderCode}`, {
+                method: 'PUT',
+            })
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Đã tự động cập nhật huỷ đơn hàng: ", data);
+                })
+                .catch(err => {
+                    console.error("Lỗi khi huỷ đơn:", err);
+                });
+        }
+    }, [searchParams]);
 
     return (
         <div className="min-h-screen flex flex-col bg-[#F0F4FF] font-sans">

@@ -1,11 +1,36 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
+import React, { useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
 import { CheckCircle } from 'lucide-react';
 
 const PaymentSuccess = () => {
     const navigate = useNavigate();
+    // Khai báo thêm hook để lấy tham số từ URL
+    const [searchParams] = useSearchParams();
+    // Dùng useRef để tránh việc useEffect gọi API 2 lần do StrictMode của React
+    const hasCalledAPI = useRef(false);
+
+    useEffect(() => {
+        // PayOS sẽ trả về url dạng: /payment/success?orderCode=32&status=PAID
+        const orderCode = searchParams.get('orderCode');
+
+        if (orderCode && !hasCalledAPI.current) {
+            hasCalledAPI.current = true;
+
+            // Gọi xuống Backend báo là đã thanh toán thành công để BE tự xuất Key
+            fetch(`http://localhost:8080/api/order/payment-success/${orderCode}`, {
+                method: 'PUT',
+            })
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Cập nhật đơn hàng thành công: ", data);
+                })
+                .catch(err => {
+                    console.error("Lỗi khi cập nhật trạng thái đơn:", err);
+                });
+        }
+    }, [searchParams]);
 
     return (
         <div className="min-h-screen flex flex-col bg-[#F0F4FF] font-sans">
@@ -20,14 +45,14 @@ const PaymentSuccess = () => {
                         Cảm ơn bạn đã mua hàng. Hệ thống đã xác nhận đơn hàng và mã Key của bạn đã được khởi tạo.
                     </p>
                     <div className="flex flex-col gap-3">
-                        <button 
-                            onClick={() => navigate('/profile', { state: { tab: 'order' } })} 
+                        <button
+                            onClick={() => navigate('/profile', { state: { tab: 'order' } })}
                             className="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition"
                         >
                             Về trang cá nhân để lấy Key
                         </button>
-                        <button 
-                            onClick={() => navigate('/')} 
+                        <button
+                            onClick={() => navigate('/')}
                             className="w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition"
                         >
                             Quay lại trang chủ
