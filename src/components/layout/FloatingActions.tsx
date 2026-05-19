@@ -1,7 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useCart } from '../../context/CartContext';
 
 const FloatingActions = () => {
+  const { isCartOpen } = useCart();
+
+  if (isCartOpen) return null;
+
   return (
     <div className="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-50 shadow-2xl">
       {/* Zalo Float */}

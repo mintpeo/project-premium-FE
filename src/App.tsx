@@ -2,10 +2,13 @@ import './index.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from "./pages/Home/Home";
 import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import Profile from "./pages/Profile";
+import ResetPassword from "./pages/Profile/ResetPassword";
+import Profile from "./pages/Profile/Profile";
 import ProductDetail from "./pages/ProductDetail/ProductDetail";
 import Checkout from "./pages/Checkout";
+import CategoryPage from "./pages/CategoryPage/CategoryPage";
+import CategoryProductDetail from "./pages/CategoryPage/CategoryProductDetail";
+import ScrollToTop from "./components/ScrollToTop";
 
 // Layout
 import DashboardLayout from "./components/layout/DashboardLayout";
@@ -20,19 +23,28 @@ import ManageOrders from "./pages/AdminPages/ManageOrders";
 import MyProducts from "./pages/SellerPages/MyProducts";
 import PersonalRevenue from "./pages/SellerPages/PersonalRevenue";
 import ProcessOrders from "./pages/SellerPages/ProcessOrders";
+import PaymentSuccess from "./pages/Profile/PaymentSuccess";
+import PaymentCancel from "./pages/Profile/PaymentCancel";
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         {/* Retail Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
+        <Route path="/category/:category" element={<CategoryPage />} />
+        <Route path="/product/:category/:productId" element={<CategoryProductDetail />} />
         <Route path="/checkout" element={<Checkout />} />
         
         <Route path="/login" element={<Login />} />
+        
+        {/* Payment Routes */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/cancel" element={<PaymentCancel />} />
         
         {/* Protected Profile Route */}
         <Route element={<ProtectedRoute />}>

@@ -16,12 +16,12 @@ interface CartSidebarProps {
 
 const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
   const navigate = useNavigate();
-  // const [cartItems, setCartItems] = useState<CartItem[]>(initialCart);
   const dataLocalSto = localStorage.getItem('auth_user');
-  const user = JSON.parse(dataLocalSto);
+  const user = dataLocalSto ? JSON.parse(dataLocalSto) : null;
   const [cartItems, setCartItems] = useState([]);
 
   useEffect(() => {
+    if (!user || !isOpen) return;
     const getYourCart = async () => {
       try {
         const res = await fetch(`http://localhost:8080/api/cart/${user.id}`);
@@ -31,9 +31,8 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
         console.error("Error: Get Your Cart", e);
       }
     }
-
     getYourCart();
-  }, []);
+  }, [isOpen]); // fetch lại mỗi khi mở sidebar
 
   const updateQuantity = async (id: number, delta: number) => {
     let newQuantity = 0;
@@ -50,16 +49,7 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
     setCartItems(prev => prev.map(item =>
         item.id === id ? { ...item, quantity: newQuantity } : item
     ));
-    // setCartItems(prev => prev.map(item => {
-    //   if (item.productId === id) {
-    //     newQuantity = Math.max(1, item.quantity + delta);
-    //     console.log("if ",newQuantity)
-    //     return { ...item, quantity: newQuantity };
-    //   }
-    //   return item;
-    // }));
 
-    // Save In Database
     try {
       await fetch(`http://localhost:8080/api/cart/updateQuantity?cartItemId=${id}&quantity=${newQuantity}`, {
         method: "PATCH",
@@ -69,8 +59,6 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
       console.log("Error: Update Quantity", e);
     }
   };
-
-  console.log(cartItems)
 
   const removeItem = async (id: number) => {
     setCartItems(prev => prev.filter(item => item.id !== id));
@@ -95,7 +83,7 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
         onClick={onClose}
       />
 
-      {/* Sidebar - Fix to 1/3 of the right screen */}
+      {/* Sidebar */}
       <div
         className={`fixed top-0 right-0 h-full w-1/3 bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
@@ -142,32 +130,29 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                   </div>
 
                   <div className="flex items-center justify-between mt-2">
-                    {
-                      item.duration && item.duration.length > 0 ? (
-                          <span className="text-blue-600 font-bold text-lg">{item.duration}</span>
-                      ) : (<></>)
-                    }
-
-                    {
-                      item.typeUser && item.typeUser.length > 0 ? (
-                          <span className="text-blue-600 font-bold text-lg">{item.typeUser}</span>
-                      ) : (<></>)
-                    }
-                    <span className="text-blue-600 font-bold text-lg">{item.productPrice.toLocaleString('vi-VN')}đ</span>
+                    <div className="flex flex-col gap-0.5">
+                      {item.duration && item.duration.length > 0 && (
+                        <span className="text-gray-500 text-xs">{item.duration}</span>
+                      )}
+                      {item.typeUser && item.typeUser.length > 0 && (
+                        <span className="text-gray-500 text-xs">{item.typeUser}</span>
+                      )}
+                      <span className="text-gray-800 font-bold text-lg">{item.productPrice?.toLocaleString('vi-VN')}đ</span>
+                    </div>
 
                     <div className="flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden shadow-sm">
                       <button
                         onClick={() => updateQuantity(item.id, -1)}
-                        className="px-3 py-1 text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition font-bold"
+                        className="px-3 py-1 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition font-bold"
                       >
                         -
                       </button>
-                      <span style={{color: "black"}} className="px-3 py-1 text-sm co font-medium border-x border-gray-300 min-w-[40px] text-center bg-gray-50">
+                      <span className="px-3 py-1 text-sm font-medium border-x border-gray-300 min-w-[40px] text-center bg-gray-50 text-gray-800">
                         {item.quantity}
                       </span>
                       <button
                         onClick={() => updateQuantity(item.id, 1)}
-                        className="px-3 py-1 text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition font-bold"
+                        className="px-3 py-1 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition font-bold"
                       >
                         +
                       </button>

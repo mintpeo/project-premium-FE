@@ -22,12 +22,22 @@ import './Checkout.css';
 //   }
 // ];
 
+interface CartItem {
+  productId: number;
+  quantity: number;
+  typeUser?: string;
+  duration?: string;
+  productPrice: number;
+  productImg: string;
+  productName: string;
+}
+
 const Checkout = () => {
   const dataLocalSto = localStorage.getItem('auth_user');
-  const user = JSON.parse(dataLocalSto);
+  const user = dataLocalSto ? JSON.parse(dataLocalSto) : null;
   const navigate = useNavigate();
 
-  const [mockCartItems, setCartItems] = useState([]);
+  const [mockCartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [fullName, setFullName] = useState("");
@@ -65,9 +75,20 @@ const Checkout = () => {
         body: JSON.stringify(body)
       });
 
-      if (res.ok) navigate("/");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+        } else {
+          navigate("/");
+        }
+      } else {
+        const errorData = await res.json();
+        alert("Lỗi tạo đơn hàng: " + (errorData.error || "Không rõ nguyên nhân"));
+      }
     } catch(e) {
       console.error("Error: Add Order", e);
+      alert("Đã có lỗi xảy ra khi kết nối với máy chủ.");
     }
   }
 
@@ -110,19 +131,19 @@ const Checkout = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700">Họ và tên *</label>
-                  <input onChange={(e) => setFullName(e.target.value)} type="text" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập họ tên" />
+                  <input onChange={(e) => setFullName(e.target.value)} type="text" className="w-full px-4 py-3 rounded-xl text-gray-900 border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập họ tên" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700">Số điện thoại *</label>
-                  <input onChange={(e) => setPhoneNumber(e.target.value)} type="tel" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập số điện thoại" />
+                  <input onChange={(e) => setPhoneNumber(e.target.value)} type="tel" className="w-full px-4 py-3 rounded-xl text-gray-900 border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập số điện thoại" />
                 </div>
                 <div className="col-span-1 md:col-span-2 space-y-1">
                   <label className="text-sm font-medium text-gray-700">Email *</label>
-                  <input type="email" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập địa chỉ email" />
+                  <input type="email" className="w-full px-4 py-3 rounded-xl text-gray-900 border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Nhập địa chỉ email" />
                 </div>
                 <div className="col-span-1 md:col-span-2 space-y-1">
                   <label className="text-sm font-medium text-gray-700">Ghi chú (Tùy chọn)</label>
-                  <textarea onChange={(e) => setNote(e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Ghi chú thêm về đơn hàng..."></textarea>
+                  <textarea onChange={(e) => setNote(e.target.value)} rows={3} className="w-full px-4 py-3 rounded-xl text-gray-900 border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition" placeholder="Ghi chú thêm về đơn hàng..."></textarea>
                 </div>
               </div>
             </div>
@@ -149,31 +170,31 @@ const Checkout = () => {
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-800">Chuyển khoản ngân hàng / VNPay</h3>
+                      <h3 className="font-semibold text-gray-800">Chuyển khoản ngân hàng</h3>
                       <p className="text-sm text-gray-500">Quét mã QR tiện lợi, tự động xác nhận đơn.</p>
                     </div>
                   </div>
                 </label>
 
-                <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 ${paymentMethod === 'momo' ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 hover:border-blue-300'}`}>
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="momo" 
-                    checked={paymentMethod === 'momo'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500" 
-                  />
-                  <div className="ml-4 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">
-                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.59-12.42L10 14.17l-2.59-2.58L6 13l4 4 8-8z"/></svg>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-800">Ví Momo</h3>
-                      <p className="text-sm text-gray-500">Thanh toán qua ví điện tử Momo.</p>
-                    </div>
-                  </div>
-                </label>
+                {/*<label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 ${paymentMethod === 'momo' ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 hover:border-blue-300'}`}>*/}
+                {/*  <input */}
+                {/*    type="radio" */}
+                {/*    name="payment" */}
+                {/*    value="momo" */}
+                {/*    checked={paymentMethod === 'momo'}*/}
+                {/*    onChange={(e) => setPaymentMethod(e.target.value)}*/}
+                {/*    className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500" */}
+                {/*  />*/}
+                {/*  <div className="ml-4 flex items-center gap-3">*/}
+                {/*    <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600">*/}
+                {/*       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.59-12.42L10 14.17l-2.59-2.58L6 13l4 4 8-8z"/></svg>*/}
+                {/*    </div>*/}
+                {/*    <div>*/}
+                {/*      <h3 className="font-semibold text-gray-800">Ví Momo</h3>*/}
+                {/*      <p className="text-sm text-gray-500">Thanh toán qua ví điện tử Momo.</p>*/}
+                {/*    </div>*/}
+                {/*  </div>*/}
+                {/*</label>*/}
               </div>
             </div>
           </div>
