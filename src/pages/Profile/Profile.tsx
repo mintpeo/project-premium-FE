@@ -707,7 +707,7 @@ const Profile = () => {
                                         value={editForm.fullName}
                                         onChange={(e) => setEditForm({...editForm, fullName: e.target.value})}
                                         required
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500 text-gray-900"
                                     />
                                 </div>
                                 <div>
@@ -717,7 +717,7 @@ const Profile = () => {
                                         type="tel"
                                         value={editForm.phoneNumber}
                                         onChange={(e) => setEditForm({...editForm, phoneNumber: e.target.value})}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500 text-gray-900"
                                     />
                                 </div>
                                 <div className="flex gap-3 pt-2">
@@ -756,7 +756,7 @@ const Profile = () => {
                                             currentPassword: e.target.value
                                         })}
                                         required
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500 text-gray-900"
                                     />
                                 </div>
                                 <div>
@@ -772,7 +772,7 @@ const Profile = () => {
                                         })}
                                         required
                                         minLength={6}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500 text-gray-900"
                                     />
                                 </div>
                                 <div>
@@ -787,7 +787,7 @@ const Profile = () => {
                                             confirmPassword: e.target.value
                                         })}
                                         required
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-[15px] focus:outline-none focus:border-blue-500 text-gray-900"
                                     />
                                 </div>
                                 <div className="flex gap-3 pt-2">

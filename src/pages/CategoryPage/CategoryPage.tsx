@@ -15,17 +15,7 @@ interface Product {
   price: number;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  netflix: 'Netflix',
-  adobe: 'Adobe',
-  google: 'Google',
-  microsoft: 'Microsoft',
-  spotify: 'Spotify',
-  canva: 'Canva',
-  ai: 'AI',
-  'bao-mat': 'Bảo Mật',
-  games: 'Games',
-};
+
 
 const CategoryPage = () => {
   const { category } = useParams<{ category: string }>();
@@ -33,12 +23,13 @@ const CategoryPage = () => {
   const { addToCart, addedId } = useAddToCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categoryName, setCategoryName] = useState<string>('');
 
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:8080/api/category/${category}`);
+        const res = await fetch(`http://localhost:8080/api/product/category/${category}`);
         const data = await res.json();
         setProducts(data);
       } catch (e) {
@@ -48,12 +39,21 @@ const CategoryPage = () => {
       }
     };
     fetchProducts();
+    
+    // Fetch category name
+    fetch(`http://localhost:8080/api/categories`)
+      .then(res => res.json())
+      .then(data => {
+         const cat = data.find((c: any) => c.id.toString() === category);
+         if (cat) setCategoryName(cat.name);
+      })
+      .catch(console.error);
   }, [category]);
 
   const calcDiscount = (priceOri: number, price: number) =>
     Math.trunc(((priceOri - price) / priceOri) * 100);
 
-  const label = CATEGORY_LABELS[category || ''] || category;
+  const label = categoryName || category;
 
   return (
     <div className="min-h-screen bg-[#F0F4FF] font-sans flex flex-col">
