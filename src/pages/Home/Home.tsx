@@ -29,7 +29,6 @@ const Home = () => {
       <Header />
       <main>
         <CardGrid />
-        <CategoryIcons />
         <BestSellers products={products} />
         <NewProducts newProducts={products} />
         <TrustAndStats />

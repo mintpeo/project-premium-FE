@@ -38,7 +38,7 @@ const PaymentCancel = () => {
                     </div>
                     <h1 className="text-3xl font-bold text-gray-800 mb-4">Thanh toán thất bại / Đã hủy</h1>
                     <p className="text-gray-600 mb-8">
-                        Rất tiếc, giao dịch của bạn chưa được hoàn tất hoặc đã bị hủy. Đơn hàng của bạn sẽ ở trạng thái chờ xác nhận.
+                        Rất tiếc, giao dịch của bạn chưa được hoàn tất. Đơn hàng của bạn đã được chuyển sang trạng thái Đã huỷ.
                     </p>
                     <div className="flex flex-col gap-3">
                         <button 
