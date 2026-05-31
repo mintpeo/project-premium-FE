@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Package, ShoppingCart, DollarSign, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Package, ShoppingCart, DollarSign, LogOut, FolderTree, UserCheck, Banknote } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const DashboardSidebar = () => {
@@ -19,6 +19,9 @@ const DashboardSidebar = () => {
     { name: 'Users', path: '/admin/users', icon: <Users size={20} /> },
     { name: 'Products', path: '/admin/products', icon: <Package size={20} /> },
     { name: 'Orders', path: '/admin/orders', icon: <ShoppingCart size={20} /> },
+    { name: 'Categories', path: '/admin/categories', icon: <FolderTree size={20} /> },
+    { name: 'Sellers', path: '/admin/sellers', icon: <UserCheck size={20} /> },
+    { name: 'Payments', path: '/admin/payments', icon: <Banknote size={20} /> },
   ];
 
   const sellerLinks = [
@@ -31,34 +34,45 @@ const DashboardSidebar = () => {
   const links = isAdmin ? adminLinks : sellerLinks;
 
   return (
-    <aside className="w-64 bg-base-200 h-screen flex flex-col border-r border-base-300">
-      <div className="p-4 border-b border-base-300">
-        <h1 className="text-xl font-bold text-primary">{isAdmin ? 'Admin Portal' : 'Seller Portal'}</h1>
+    <aside className="w-64 bg-base-100 h-screen flex flex-col border-r border-base-200 shadow-sm">
+      <div className="p-5 border-b border-base-200">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-primary" />
+          <h1 className="text-lg font-bold text-base-content">{isAdmin ? 'Admin' : 'Seller'}</h1>
+        </div>
+        <p className="text-xs text-gray-400 mt-0.5 ml-5">{isAdmin ? 'Quản trị hệ thống' : 'Kênh người bán'}</p>
       </div>
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-3 space-y-1">
         {links.map((link) => {
           const isActive = location.pathname === link.path;
           return (
             <Link
               key={link.name}
               to={link.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive ? 'bg-primary text-primary-content font-medium' : 'hover:bg-base-300 text-base-content'
+              className={`group flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 relative ${
+                isActive
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-base-content/60 hover:text-base-content hover:bg-base-200'
               }`}
             >
-              {link.icon}
+              {isActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+              )}
+              <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                {link.icon}
+              </span>
               {link.name}
             </Link>
           );
         })}
       </nav>
-      <div className="p-4 border-t border-base-300">
+      <div className="p-3 border-t border-base-200">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:bg-error/10 transition-colors w-full"
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:text-error hover:bg-error/5 transition-all duration-200 w-full group"
         >
-          <LogOut size={20} />
-          Đăng xuất
+          <LogOut size={20} className="group-hover:scale-110 transition-transform duration-200" />
+          <span className="text-sm font-medium">Đăng xuất</span>
         </button>
       </div>
     </aside>

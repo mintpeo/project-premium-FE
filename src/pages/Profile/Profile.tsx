@@ -33,7 +33,7 @@ interface OrderResponse {
 }
 
 const Profile = () => {
-    const {user, logout, isLoggedIn} = useAuth();
+    const {user, logout, isLoggedIn, updateUser} = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [activeTab, setActiveTab] = useState<'overview' | 'order' | 'edit' | 'password'>('overview');
@@ -101,6 +101,9 @@ const Profile = () => {
             const data = await res.json();
             if (data.success) {
                 setProfile(data.data);
+                if (data.data.role && data.data.role !== user?.role) {
+                    updateUser({ role: data.data.role });
+                }
                 setEditForm({
                     fullName: data.data.fullName || '',
                     phoneNumber: data.data.phoneNumber || '',
@@ -404,6 +407,22 @@ const Profile = () => {
                                 </svg>
                                 Đổi mật khẩu
                             </button>
+
+                            {profile.role === 'ADMIN' && (
+                                <button
+                                    onClick={() => navigate('/admin/dashboard')}
+                                    className={`flex items-center gap-3 px-6 py-3.5 border-t border-gray-100 ${
+                                        location.pathname.startsWith('/admin')
+                                            ? 'border-l-[3px] border-[#0d6efd] text-[#0d6efd]'
+                                            : 'border-l-[3px] border-transparent text-[#4b5563] hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M4 4h7v7H4V4zm0 9h7v7H4v-7zm9-9h7v7h-7V4zm0 9h7v7h-7v-7z"/>
+                                    </svg>
+                                    Quản trị
+                                </button>
+                            )}
 
                             <button
                                 onClick={handleLogout}
