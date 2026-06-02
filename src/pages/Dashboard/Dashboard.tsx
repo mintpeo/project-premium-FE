@@ -20,17 +20,25 @@ const periodLabels: Record<string, string> = {
 };
 
 const Dashboard = () => {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<any>({
     totalUsers: 0,
     totalProducts: 0,
     totalOrders: 0,
     totalRevenue: 0,
     orderStatusCounts: {} as Record<string, number>,
+    pendingProducts: 0,
+    pendingReviews: 0,
+    pendingComments: 0,
+    newCustomers30d: 0,
+    topProducts: [],
   });
   const [loading, setLoading] = useState(true);
   const [revenueData, setRevenueData] = useState<{ date: string; revenue: number }[]>([]);
   const [revenuePeriod, setRevenuePeriod] = useState('30d');
   const [revenueLoading, setRevenueLoading] = useState(false);
+  const [categoryRevenue, setCategoryRevenue] = useState<{ name: string; revenue: number }[]>([]);
+  const [returningStats, setReturningStats] = useState<any>(null);
+  const [bestSellingTypes, setBestSellingTypes] = useState<{ name: string; revenue: number; sold: number }[]>([]);
 
   useEffect(() => {
     fetch('http://localhost:8080/api/admin/dashboard')
@@ -40,6 +48,27 @@ const Dashboard = () => {
       })
       .catch(err => console.error('Lỗi tải dashboard:', err))
       .finally(() => setLoading(false));
+
+    fetch('http://localhost:8080/api/admin/revenue/by-category')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCategoryRevenue(data);
+      })
+      .catch(err => console.error('Lỗi tải doanh thu danh mục:', err));
+
+    fetch('http://localhost:8080/api/admin/returning-customer-stats')
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data === 'object') setReturningStats(data);
+      })
+      .catch(err => console.error('Lỗi tải thống kê khách hàng:', err));
+
+    fetch('http://localhost:8080/api/admin/best-selling-types')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setBestSellingTypes(data);
+      })
+      .catch(err => console.error('Lỗi tải loại SP bán chạy:', err));
   }, []);
 
   const fetchRevenue = useCallback(async (period: string) => {
@@ -62,8 +91,8 @@ const Dashboard = () => {
   }, [revenuePeriod, fetchRevenue]);
 
   const orderStatusData = Object.entries(stats.orderStatusCounts)
-    .filter(([_, count]) => count > 0)
-    .map(([key, count]) => ({ name: statusLabels[key] || key, value: count }));
+    .filter(([_, count]) => (count as number) > 0)
+    .map(([key, count]) => ({ name: statusLabels[key] || key, value: count as number }));
 
   const barChartData = [
     { name: 'Tổng đơn', value: stats.totalOrders },
@@ -81,7 +110,7 @@ const Dashboard = () => {
           <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="admin-card">
               <div className="p-6 flex items-center gap-4">
@@ -124,6 +153,26 @@ const Dashboard = () => {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ), gradient: 'from-violet-600 to-violet-500', shadow: 'shadow-violet-500/20' },
+    { label: 'Người dùng mới (30d)', value: stats.newCustomers30d, icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+      </svg>
+    ), gradient: 'from-pink-600 to-pink-500', shadow: 'shadow-pink-500/20' },
+    { label: 'SP chờ duyệt', value: stats.pendingProducts, icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ), gradient: 'from-orange-600 to-orange-500', shadow: 'shadow-orange-500/20' },
+    { label: 'BL chờ duyệt', value: stats.pendingComments, icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ), gradient: 'from-teal-600 to-teal-500', shadow: 'shadow-teal-500/20' },
+    { label: 'Đánh giá chờ duyệt', value: stats.pendingReviews, icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+      </svg>
+    ), gradient: 'from-cyan-600 to-cyan-500', shadow: 'shadow-cyan-500/20' },
   ];
 
   return (
@@ -257,14 +306,143 @@ const Dashboard = () => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.4} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#9ca3af' }} interval="preserveStartEnd" />
                   <YAxis axisLine={false} tickLine={false} fontSize={11} tick={{ fill: '#9ca3af' }}
-                    tickFormatter={(v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)} />
+                    tickFormatter={(v: any) => { const n = Number(v); return n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : String(n); }} />
                   <Tooltip
-                    formatter={(value: number) => [`${value.toLocaleString('vi-VN')}đ`, 'Doanh thu']}
+                    formatter={(value: any) => [`${Number(value).toLocaleString('vi-VN')}đ`, 'Doanh thu']}
                     contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '13px' }} />
                   <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fill="url(#revenueGradient)" dot={false} activeDot={{ r: 4, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="admin-card">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-1 h-5 bg-blue-600 rounded-full" />
+              <h3 className="text-base font-semibold text-gray-900">Doanh thu theo danh mục</h3>
+            </div>
+            <div className="h-72">
+              {categoryRevenue.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                  Chưa có dữ liệu
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryRevenue}
+                      cx="50%" cy="50%"
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="revenue"
+                      label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                      labelLine={true}
+                    >
+                      {categoryRevenue.map((_, index) => (
+                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: any) => [`${Number(value).toLocaleString('vi-VN')}đ`, 'Doanh thu']}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '13px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="admin-card">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-1 h-5 bg-blue-600 rounded-full" />
+              <h3 className="text-base font-semibold text-gray-900">Top sản phẩm bán chạy</h3>
+            </div>
+            <div className="space-y-3 max-h-72 overflow-y-auto">
+              {stats.topProducts?.map((product: any, i: number) => (
+                <div key={product.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                  <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-blue-500 to-blue-600 shrink-0">
+                    {i + 1}
+                  </span>
+                  <img src={product.img || '/assets/netflix-logo.png'} alt={product.name}
+                    className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                    <p className="text-xs text-gray-400">Đã bán: {product.sold || 0}</p>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">{product.price?.toLocaleString('vi-VN')}đ</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="admin-card">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-1 h-5 bg-blue-600 rounded-full" />
+                <h3 className="text-base font-semibold text-gray-900">Khách hàng quay lại</h3>
+              </div>
+              {returningStats ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-around py-4">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-blue-600">{returningStats.returningCustomers || 0}</p>
+                      <p className="text-sm text-gray-500 mt-1">Khách quay lại</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-gray-400">{returningStats.oneTimeCustomers || 0}</p>
+                      <p className="text-sm text-gray-500 mt-1">Mua 1 lần</p>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div className="bg-blue-600 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${returningStats.returningCustomers + returningStats.oneTimeCustomers > 0
+                        ? (returningStats.returningCustomers / (returningStats.returningCustomers + returningStats.oneTimeCustomers)) * 100
+                        : 0}%` }} />
+                  </div>
+                  <p className="text-xs text-gray-400 text-center">
+                    {returningStats.returningCustomers + returningStats.oneTimeCustomers > 0
+                      ? `${((returningStats.returningCustomers / (returningStats.returningCustomers + returningStats.oneTimeCustomers)) * 100).toFixed(1)}% khách hàng quay lại mua hàng`
+                      : 'Chưa có dữ liệu'}
+                  </p>
+                </div>
+              ) : (
+                <div className="h-32 flex items-center justify-center text-gray-400 text-sm">Đang tải...</div>
+              )}
+            </div>
+          </div>
+
+          <div className="admin-card">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-1 h-5 bg-blue-600 rounded-full" />
+                <h3 className="text-base font-semibold text-gray-900">Loại sản phẩm bán chạy</h3>
+              </div>
+              {bestSellingTypes.length > 0 ? (
+                <div className="space-y-3 max-h-72 overflow-y-auto">
+                  {bestSellingTypes.map((item, i) => (
+                    <div key={item.name} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                      <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-emerald-500 to-emerald-600 shrink-0">
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                        <p className="text-xs text-gray-400">Đã bán: {item.sold.toLocaleString('vi-VN')}</p>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900">{item.revenue.toLocaleString('vi-VN')}đ</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-32 flex items-center justify-center text-gray-400 text-sm">Chưa có dữ liệu</div>
+              )}
+            </div>
           </div>
         </div>
       </div>

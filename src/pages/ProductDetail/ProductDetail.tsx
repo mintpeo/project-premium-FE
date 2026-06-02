@@ -7,6 +7,7 @@ import ProductPolicy from './ProductPolicy';
 import ProductDescription from './ProductDescription';
 import ProductInfo from './ProductInfo';
 import ProductReviews from './ProductReviews';
+import ProductComments from './ProductComments';
 import {useParams} from "react-router-dom";
 
 const ProductDetail = () => {
@@ -40,6 +41,7 @@ const ProductDetail = () => {
           <ProductDescription />
           <ProductInfo />
           <ProductReviews productId={Number(productId)} />
+          <ProductComments productId={Number(productId)} />
         </div>
       </main>
 

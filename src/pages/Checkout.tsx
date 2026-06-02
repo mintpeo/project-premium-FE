@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useLocation} from "react-router-dom";
 import './Checkout.css';
 
 // MOCK DATA for presentation
@@ -36,6 +36,7 @@ const Checkout = () => {
   const dataLocalSto = localStorage.getItem('auth_user');
   const user = dataLocalSto ? JSON.parse(dataLocalSto) : null;
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [mockCartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +94,21 @@ const Checkout = () => {
   }
 
   useEffect(() => {
+    const buyNowProduct = location.state?.product;
+    if (buyNowProduct) {
+      setCartItems([{
+        productId: buyNowProduct.id,
+        quantity: 1,
+        typeUser: buyNowProduct.typesUser?.[0] || "",
+        duration: buyNowProduct.duration?.[0] || "",
+        productPrice: buyNowProduct.price,
+        productImg: buyNowProduct.img,
+        productName: buyNowProduct.name,
+      }]);
+      setIsLoading(false);
+      return;
+    }
+
     const getYourCart = async () => {
       try {
         const res = await fetch(`http://localhost:8080/api/cart/${user.id}`);
@@ -101,6 +117,7 @@ const Checkout = () => {
         setIsLoading(false);
       } catch(e) {
         console.error("Error: Get Mock Cart Item", e);
+        setIsLoading(false);
       }
     }
 

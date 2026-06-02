@@ -8,6 +8,7 @@ interface Product {
   priceOri: number;
   rating: number;
   sold: number;
+  approved: boolean;
   seller?: { id: number; email: string; fullName: string } | null;
   productCates?: { id: number; category: { id: number; name: string } }[];
 }
@@ -27,7 +28,7 @@ const ManageProducts = () => {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'platform' | 'seller'>('all');
+  const [filter, setFilter] = useState<'all' | 'platform' | 'seller' | 'pending'>('all');
   const [search, setSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,8 +137,18 @@ const ManageProducts = () => {
     }
   };
 
+  const handleApprove = async (id: number) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/admin/products/${id}/approve`, { method: 'PUT' });
+      if (!res.ok) throw new Error('Duyệt thất bại');
+      await fetchProducts();
+    } catch (err: any) {
+      alert('Lỗi: ' + (err.message || 'Không thể duyệt'));
+    }
+  };
+
   const filtered = products
-    .filter(p => filter === 'all' ? true : filter === 'platform' ? !p.seller : p.seller)
+    .filter(p => filter === 'all' ? true : filter === 'platform' ? !p.seller : filter === 'seller' ? p.seller : !p.approved)
     .filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()));
 
   if (loading) {
@@ -172,6 +183,14 @@ const ManageProducts = () => {
           <h1>Quản lý sản phẩm</h1>
           <span className="admin-page-count">{products.length} sản phẩm</span>
         </div>
+        <div className="flex items-center gap-2">
+        <a href="http://localhost:8080/api/admin/export/products"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Xuất Excel
+        </a>
         <button onClick={openCreate} className="admin-btn-primary">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -179,18 +198,19 @@ const ManageProducts = () => {
           Thêm sản phẩm
         </button>
       </div>
+      </div>
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-3.5">
         <div className="flex items-center gap-2">
-          {(['all', 'platform', 'seller'] as const).map(f => (
+          {(['all', 'platform', 'seller', 'pending'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={filter === f ? 'admin-filter-active' : 'admin-filter-inactive'}>
-              {f === 'all' ? 'Tất cả' : f === 'platform' ? 'Sản phẩm sàn' : 'Sản phẩm seller'}
+              {f === 'all' ? 'Tất cả' : f === 'platform' ? 'Sản phẩm sàn' : f === 'seller' ? 'Sản phẩm seller' : 'Chờ duyệt'}
             </button>
           ))}
         </div>
-        <div className="relative max-w-xs w-full">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 max-w-xs w-full">
+          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -198,7 +218,7 @@ const ManageProducts = () => {
             placeholder="Tìm kiếm sản phẩm..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="admin-input pl-10"
+            className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
           />
         </div>
       </div>
@@ -246,7 +266,9 @@ const ManageProducts = () => {
                   </td>
                   <td className="text-center text-sm font-medium">{product.sold || 0}</td>
                   <td className="text-center">
-                    {product.seller ? (
+                    {!product.approved ? (
+                      <span className="admin-badge-error"><span className="admin-badge-dot" />Chờ duyệt</span>
+                    ) : product.seller ? (
                       <span className="admin-badge-warning"><span className="admin-badge-dot" />Seller</span>
                     ) : (
                       <span className="admin-badge-info"><span className="admin-badge-dot" />Sàn</span>
@@ -254,6 +276,14 @@ const ManageProducts = () => {
                   </td>
                   <td className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {!product.approved && (
+                        <button onClick={() => handleApprove(product.id)}
+                          className="admin-btn-icon-sm text-green-600 hover:bg-green-50" title="Duyệt sản phẩm">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                      )}
                       <button onClick={() => openEdit(product)} className="admin-btn-icon text-gray-400 hover:text-blue-600 hover:bg-blue-50">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
