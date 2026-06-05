@@ -2,6 +2,7 @@ import './index.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from "./pages/Home/Home";
 import Auth from "./pages/Auth";
+import OAuth from "./pages/OAuthSuccess";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import ProductDetail from "./pages/ProductDetail/ProductDetail";
@@ -28,6 +29,7 @@ function App() {
         {/* Retail Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/oauth-google" element={<OAuth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path="/checkout" element={<Checkout />} />
