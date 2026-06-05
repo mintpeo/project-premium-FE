@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from "./pages/Home/Home";
 import Auth from "./pages/Auth";
 import OAuth from "./pages/OAuthSuccess";
-import ResetPassword from "./pages/ResetPassword";
-import Profile from "./pages/Profile";
+import ResetPassword from "./pages/Profile/ResetPassword";
+import Profile from "./pages/Profile/Profile";
 import ProductDetail from "./pages/ProductDetail/ProductDetail";
 import Checkout from "./pages/Checkout";
 
