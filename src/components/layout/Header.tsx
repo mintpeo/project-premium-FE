@@ -18,6 +18,8 @@ const Header = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const tailwindSafelist = "text-[#FF0000] text-[#00A4EF] text-[#1DB954] text-[#00C4CC] text-red-500 text-blue-500 text-green-500";
 
+    const [searchText, setSearchText] = useState('');
+
     const handleLogout = () => {
         logout();
         navigate('/');
@@ -28,6 +30,14 @@ const Header = () => {
         if (user.role === 'ADMIN') return '/admin/dashboard';
         if (user.role === 'SELLER') return '/seller/dashboard';
         return '/profile';
+    };
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        const q = searchText.trim();
+        if (q) {
+            navigate(`/search?keyword=${encodeURIComponent(q)}`);
+        }
     };
 
     useEffect(() => {
@@ -52,21 +62,23 @@ const Header = () => {
                 </Link>
 
                 {/* Search Bar */}
-                <div className="flex-1 max-w-lg">
+                <form onSubmit={handleSearch} className="flex-1 max-w-lg">
                     <div className="relative">
                         <input
                             type="text"
+                            value={searchText}
+                            onChange={e => setSearchText(e.target.value)}
                             placeholder="Nhập nội dung cần tìm..."
                             className="w-full px-6 py-3 rounded-full bg-[#2a3859] border-2 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)] text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:shadow-[0_0_25px_rgba(59,130,246,0.6)] transition-all duration-300"
                         />
-                        <button className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-400">
+                        <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-400">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                       d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                             </svg>
                         </button>
                     </div>
-                </div>
+                </form>
 
                 {/* Login & Cart */}
                 <div className="flex items-center gap-3">

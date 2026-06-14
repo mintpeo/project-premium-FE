@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { Download } from 'lucide-react';
 
 const PersonalRevenue = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState({ totalOrders: 0, totalSpent: 0, successOrders: 0 });
   const [balance, setBalance] = useState({ pendingAmount: 0, availableAmount: 0, totalEarned: 0 });
   const [loading, setLoading] = useState(true);
+  const [revenueHistory, setRevenueHistory] = useState<{ month: string; amount: number; orders: number }[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -15,11 +17,12 @@ const PersonalRevenue = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resSuccess, resPending, resCancelled, resBalance] = await Promise.all([
+      const [resSuccess, resPending, resCancelled, resBalance, resRevenue] = await Promise.all([
         fetch(`http://localhost:8080/api/order/history?userId=${user!.id}&status=SUCCESS`),
         fetch(`http://localhost:8080/api/order/history?userId=${user!.id}&status=PENDING`),
         fetch(`http://localhost:8080/api/order/history?userId=${user!.id}&status=CANCELLED`),
         fetch(`http://localhost:8080/api/seller/balance/${user!.id}`),
+        fetch(`http://localhost:8080/api/seller/revenue/${user!.id}`),
       ]);
 
       const successOrders = resSuccess.ok ? await resSuccess.json() : [];
@@ -36,15 +39,50 @@ const PersonalRevenue = () => {
 
       setStats({ totalOrders, totalSpent, successOrders: Array.isArray(successOrders) ? successOrders.length : 0 });
 
-      if (resBalance.ok) {
-        setBalance(await resBalance.json());
+      if (resBalance.ok) setBalance(await resBalance.json());
+
+      if (resRevenue.ok) {
+        const data = await resRevenue.json();
+        if (Array.isArray(data)) setRevenueHistory(data);
       }
+
+      tryLocalRevenue(successOrders);
     } catch (err) {
       console.error('Lỗi tải doanh thu:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  const tryLocalRevenue = (orders: any[]) => {
+    if (!Array.isArray(orders) || orders.length === 0) return;
+    const grouped: Record<string, { amount: number; orders: number }> = {};
+    orders.forEach((o: any) => {
+      const d = new Date(o.orderDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!grouped[key]) grouped[key] = { amount: 0, orders: 0 };
+      grouped[key].amount += o.totalPrice || 0;
+      grouped[key].orders += 1;
+    });
+    setRevenueHistory(Object.entries(grouped)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => ({ month, ...v })));
+  };
+
+  const exportExcel = () => {
+    const rows = [['Tháng', 'Số đơn hàng', 'Doanh thu']];
+    revenueHistory.forEach(r => rows.push([r.month, String(r.orders), r.amount.toLocaleString('vi-VN') + 'đ']));
+    rows.push(['Tổng', String(stats.successOrders), stats.totalSpent.toLocaleString('vi-VN') + 'đ']);
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `doanh-thu-${user?.id}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  const maxRevenue = Math.max(...revenueHistory.map(r => r.amount), 1);
 
   if (loading) {
     return (
@@ -55,12 +93,7 @@ const PersonalRevenue = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="admin-card">
-              <div className="p-6 space-y-3">
-                <div className="admin-skeleton h-4 w-24" />
-                <div className="admin-skeleton h-8 w-32" />
-              </div>
-            </div>
+            <div key={i} className="admin-card"><div className="p-6 space-y-3"><div className="admin-skeleton h-4 w-24" /><div className="admin-skeleton h-8 w-32" /></div></div>
           ))}
         </div>
       </div>
@@ -69,54 +102,24 @@ const PersonalRevenue = () => {
 
   const cards = [
     {
-      label: 'Tổng đơn hàng',
-      value: stats.totalOrders,
-      gradient: 'from-blue-600 to-blue-500',
-      icon: (
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-        </svg>
-      ),
+      label: 'Tổng đơn hàng', value: stats.totalOrders, gradient: 'from-blue-600 to-blue-500',
+      icon: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
     },
     {
-      label: 'Hoàn thành',
-      value: stats.successOrders,
-      gradient: 'from-emerald-600 to-emerald-500',
-      icon: (
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      label: 'Hoàn thành', value: stats.successOrders, gradient: 'from-emerald-600 to-emerald-500',
+      icon: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     },
     {
-      label: 'Chờ duyệt',
-      value: `${balance.pendingAmount.toLocaleString('vi-VN')}đ`,
-      gradient: 'from-amber-600 to-amber-500',
-      icon: (
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      label: 'Chờ duyệt', value: `${balance.pendingAmount.toLocaleString('vi-VN')}đ`, gradient: 'from-amber-600 to-amber-500',
+      icon: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     },
     {
-      label: 'Đã nhận',
-      value: `${balance.availableAmount.toLocaleString('vi-VN')}đ`,
-      gradient: 'from-emerald-600 to-emerald-500',
-      icon: (
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      label: 'Đã nhận', value: `${balance.availableAmount.toLocaleString('vi-VN')}đ`, gradient: 'from-emerald-600 to-emerald-500',
+      icon: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     },
     {
-      label: 'Tổng thu nhập',
-      value: `${balance.totalEarned.toLocaleString('vi-VN')}đ`,
-      gradient: 'from-violet-600 to-violet-500',
-      icon: (
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      label: 'Tổng thu nhập', value: `${balance.totalEarned.toLocaleString('vi-VN')}đ`, gradient: 'from-violet-600 to-violet-500',
+      icon: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     },
   ];
 
@@ -127,6 +130,9 @@ const PersonalRevenue = () => {
           <div className="accent-dot" />
           <h1>Doanh thu cá nhân</h1>
         </div>
+        <button onClick={exportExcel} className="admin-btn-primary">
+          <Download className="w-4 h-4" /> Xuất báo cáo
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -135,9 +141,7 @@ const PersonalRevenue = () => {
             <div className="p-6 relative">
               <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full bg-gradient-to-br ${card.gradient} opacity-10`} />
               <div className="flex items-center gap-4 relative z-10">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center shadow-lg shrink-0`}>
-                  {card.icon}
-                </div>
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center shadow-lg shrink-0`}>{card.icon}</div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-500">{card.label}</p>
                   <p className="text-xl font-bold text-gray-900 mt-0.5 truncate">{card.value}</p>
@@ -147,6 +151,26 @@ const PersonalRevenue = () => {
           </div>
         ))}
       </div>
+
+      {revenueHistory.length > 0 && (
+        <div className="admin-card">
+          <div className="p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-6">Doanh thu theo tháng</h3>
+            <div className="flex items-end gap-3 h-48">
+              {revenueHistory.map((r, i) => (
+                <div key={r.month} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                  <span className="text-xs font-semibold text-gray-700">{(r.amount / 1000000).toFixed(1)}tr</span>
+                  <div
+                    className="w-full max-w-[48px] bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg hover:from-blue-600 hover:to-blue-500 transition-all cursor-pointer"
+                    style={{ height: `${(r.amount / maxRevenue) * 100}%`, minHeight: '8px' }}
+                  />
+                  <span className="text-[10px] text-gray-400 font-medium">{r.month.slice(5)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

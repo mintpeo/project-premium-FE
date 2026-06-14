@@ -75,6 +75,20 @@ const ManageOrders = () => {
     }
   };
 
+  const handleUpdateStatus = async (orderId: number, newStatus: string) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error('Cập nhật thất bại');
+      await fetchOrders();
+    } catch (err: any) {
+      alert('Lỗi: ' + (err.message || 'Không thể cập nhật trạng thái'));
+    }
+  };
+
   const filtered = statusFilter ? orders.filter(o => o.orderStatus === statusFilter) : orders;
 
   const statusBadge = (status: string) => {
@@ -112,13 +126,21 @@ const ManageOrders = () => {
 
   return (
     <div className="space-y-8">
-      <div className="admin-page-header">
-        <div className="admin-page-title">
-          <div className="accent-dot" />
-          <h1>Quản lý đơn hàng</h1>
-          <span className="admin-page-count">{filtered.length} đơn</span>
-        </div>
-        <div className="flex gap-1.5">
+        <div className="admin-page-header">
+          <div className="admin-page-title">
+            <div className="accent-dot" />
+            <h1>Quản lý đơn hàng</h1>
+            <span className="admin-page-count">{filtered.length} đơn</span>
+          </div>
+          <div className="flex items-center gap-2">
+          <a href="http://localhost:8080/api/admin/export/orders"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Xuất Excel
+          </a>
+          <div className="flex gap-1.5">
           {['', 'PENDING', 'PROCESSING', 'SUCCESS', 'CANCELLED'].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={statusFilter === s ? 'admin-filter-active' : 'admin-filter-inactive'}>
@@ -126,6 +148,7 @@ const ManageOrders = () => {
             </button>
           ))}
         </div>
+      </div>
       </div>
 
       <div className="admin-card">
@@ -187,6 +210,18 @@ const ManageOrders = () => {
                             </svg>
                           </button>
                         )}
+                        <select
+                          value=""
+                          onChange={(e) => { e.stopPropagation(); if (e.target.value) handleUpdateStatus(order.id, e.target.value); }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="admin-select text-xs py-1 px-2 max-w-[100px]"
+                        >
+                          <option value="">Cập nhật</option>
+                          {order.orderStatus !== 'PENDING' && <option value="PENDING">Chờ xác nhận</option>}
+                          {order.orderStatus !== 'PROCESSING' && <option value="PROCESSING">Đang xử lý</option>}
+                          {order.orderStatus !== 'SUCCESS' && <option value="SUCCESS">Hoàn thành</option>}
+                          {order.orderStatus !== 'CANCELLED' && <option value="CANCELLED">Đã huỷ</option>}
+                        </select>
                       </div>
                     </td>
                   </tr>

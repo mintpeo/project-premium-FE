@@ -9,6 +9,7 @@ import ProductDetail from "./pages/ProductDetail/ProductDetail";
 import Checkout from "./pages/Checkout";
 import CategoryPage from "./pages/CategoryPage/CategoryPage";
 import CategoryProductDetail from "./pages/CategoryPage/CategoryProductDetail";
+import SearchPage from "./pages/Search/SearchPage";
 import ScrollToTop from "./components/ScrollToTop";
 
 // Layout
@@ -24,9 +25,16 @@ import ManageOrders from "./pages/AdminPages/ManageOrders";
 import ManageCategories from "./pages/AdminPages/ManageCategories";
 import ManageSellers from "./pages/AdminPages/ManageSellers";
 import ApprovePayments from "./pages/AdminPages/ApprovePayments";
+import ManageReviews from "./pages/AdminPages/ManageReviews";
+import ManageComments from "./pages/AdminPages/ManageComments";
+import ManageCoupons from "./pages/AdminPages/ManageCoupons";
+import ManageProductKeys from "./pages/AdminPages/ManageProductKeys";
+import ManageRefunds from "./pages/AdminPages/ManageRefunds";
 import MyProducts from "./pages/SellerPages/MyProducts";
 import PersonalRevenue from "./pages/SellerPages/PersonalRevenue";
 import ProcessOrders from "./pages/SellerPages/ProcessOrders";
+import SellerCoupons from "./pages/SellerPages/SellerCoupons";
+import SellerComments from "./pages/SellerPages/SellerComments";
 import PaymentSuccess from "./pages/Profile/PaymentSuccess";
 import PaymentCancel from "./pages/Profile/PaymentCancel";
 
@@ -40,6 +48,7 @@ function App() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/oauth-google" element={<OAuth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/search" element={<SearchPage />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path="/category/:category" element={<CategoryPage />} />
         <Route path="/product/:category/:productId" element={<CategoryProductDetail />} />
@@ -68,6 +77,11 @@ function App() {
               <Route path="/admin/categories" element={<ManageCategories />} />
               <Route path="/admin/sellers" element={<ManageSellers />} />
               <Route path="/admin/payments" element={<ApprovePayments />} />
+              <Route path="/admin/reviews" element={<ManageReviews />} />
+              <Route path="/admin/comments" element={<ManageComments />} />
+              <Route path="/admin/coupons" element={<ManageCoupons />} />
+              <Route path="/admin/keys" element={<ManageProductKeys />} />
+              <Route path="/admin/refunds" element={<ManageRefunds />} />
             </Route>
 
             {/* Seller Routes */}
@@ -76,6 +90,8 @@ function App() {
               <Route path="/seller/products" element={<MyProducts />} />
               <Route path="/seller/revenue" element={<PersonalRevenue />} />
               <Route path="/seller/orders" element={<ProcessOrders />} />
+              <Route path="/seller/coupons" element={<SellerCoupons />} />
+              <Route path="/seller/reviews" element={<SellerComments />} />
             </Route>
           </Route>
         </Route>

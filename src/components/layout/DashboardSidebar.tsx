@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Package, ShoppingCart, DollarSign, LogOut, FolderTree, UserCheck, Banknote } from 'lucide-react';
+import { LayoutDashboard, Users, Package, ShoppingCart, DollarSign, LogOut, FolderTree, UserCheck, Banknote, MessageSquare, MessageCircle, Tags, Key, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const DashboardSidebar = () => {
@@ -22,11 +22,18 @@ const DashboardSidebar = () => {
     { name: 'Categories', path: '/admin/categories', icon: <FolderTree size={20} /> },
     { name: 'Sellers', path: '/admin/sellers', icon: <UserCheck size={20} /> },
     { name: 'Payments', path: '/admin/payments', icon: <Banknote size={20} /> },
+    { name: 'Reviews', path: '/admin/reviews', icon: <MessageSquare size={20} /> },
+    { name: 'Comments', path: '/admin/comments', icon: <MessageCircle size={20} /> },
+    { name: 'Coupons', path: '/admin/coupons', icon: <Tags size={20} /> },
+    { name: 'Key Inventory', path: '/admin/keys', icon: <Key size={20} /> },
+    { name: 'Refunds', path: '/admin/refunds', icon: <RotateCcw size={20} /> },
   ];
 
   const sellerLinks = [
     { name: 'Dashboard', path: '/seller/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'My Products', path: '/seller/products', icon: <Package size={20} /> },
+    { name: 'Coupons', path: '/seller/coupons', icon: <Tags size={20} /> },
+    { name: 'Reviews', path: '/seller/reviews', icon: <MessageCircle size={20} /> },
     { name: 'Revenue', path: '/seller/revenue', icon: <DollarSign size={20} /> },
     { name: 'Orders', path: '/seller/orders', icon: <ShoppingCart size={20} /> },
   ];
