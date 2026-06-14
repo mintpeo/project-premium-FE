@@ -21,6 +21,9 @@ import Dashboard from "./pages/Dashboard/Dashboard";
 import ManageUsers from "./pages/AdminPages/ManageUsers";
 import ManageProducts from "./pages/AdminPages/ManageProducts";
 import ManageOrders from "./pages/AdminPages/ManageOrders";
+import ManageCategories from "./pages/AdminPages/ManageCategories";
+import ManageSellers from "./pages/AdminPages/ManageSellers";
+import ApprovePayments from "./pages/AdminPages/ApprovePayments";
 import MyProducts from "./pages/SellerPages/MyProducts";
 import PersonalRevenue from "./pages/SellerPages/PersonalRevenue";
 import ProcessOrders from "./pages/SellerPages/ProcessOrders";
@@ -62,6 +65,9 @@ function App() {
               <Route path="/admin/users" element={<ManageUsers />} />
               <Route path="/admin/products" element={<ManageProducts />} />
               <Route path="/admin/orders" element={<ManageOrders />} />
+              <Route path="/admin/categories" element={<ManageCategories />} />
+              <Route path="/admin/sellers" element={<ManageSellers />} />
+              <Route path="/admin/payments" element={<ApprovePayments />} />
             </Route>
 
             {/* Seller Routes */}
