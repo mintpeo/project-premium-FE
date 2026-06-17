@@ -19,6 +19,7 @@ const CategoryProductBanner = ({ product, category }: { product: any; category: 
   const navigate = useNavigate();
   const userData = localStorage.getItem('auth_user');
   const user = userData ? JSON.parse(userData) : null;
+  const [imgFailed, setImgFailed] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
 
   const addToCart = async () => {
@@ -82,12 +83,21 @@ const CategoryProductBanner = ({ product, category }: { product: any; category: 
         <div className="grid grid-cols-1 lg:grid-cols-[340px_200px_1fr] gap-x-12 gap-y-8">
           {/* Column 1: Image */}
           <div className="w-full bg-[#2a3859] rounded-2xl aspect-square flex items-center justify-center p-3 shadow-2xl overflow-hidden relative group">
-            <img
-              src={product.img}
-              alt={product.name}
-              className="w-full h-full object-cover rounded-xl shadow-inner group-hover:scale-105 transition duration-500"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/products/youtube-premium.png'; }}
-            />
+            {imgFailed ? (
+              <div
+                className="w-full h-full rounded-xl flex items-center justify-center text-white font-bold text-xl text-center p-4 select-none"
+                style={{ backgroundColor: ['#e85a21','#3b82f6','#22c55e','#a855f7','#ec4899','#f59e0b','#06b6d4','#ef4444'][product.name.length % 8] }}
+              >
+                {product.name}
+              </div>
+            ) : (
+              <img
+                src={product.img}
+                alt={product.name}
+                className="w-full h-full object-cover rounded-xl shadow-inner group-hover:scale-105 transition duration-500"
+                onError={() => setImgFailed(true)}
+              />
+            )}
             {discount > 0 && (
               <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold px-3 py-1 rounded-full shadow">
                 -{discount}%

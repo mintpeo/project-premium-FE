@@ -2,6 +2,8 @@ import './index.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from "./pages/Home/Home";
 import Auth from "./pages/Auth";
+import OAuthSuccess from "./pages/OAuthSuccess";
+import FacebookCallback from "./pages/FacebookCallback";
 import ResetPassword from "./pages/Profile/ResetPassword";
 import Profile from "./pages/Profile/Profile";
 import ProductDetail from "./pages/ProductDetail/ProductDetail";
@@ -45,6 +47,8 @@ function App() {
         {/* Retail Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/oauth-callback" element={<OAuthSuccess />} />
+        <Route path="/facebook-callback" element={<FacebookCallback />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/product/:productId" element={<ProductDetail />} />

@@ -5,6 +5,7 @@ import './ProductBanner.css'
 
 const ProductBanner = ({product}) => {
   const navigate = useNavigate();
+  const [imgFailed, setImgFailed] = useState(false);
   const userData = localStorage.getItem("auth_user");
   const user = JSON.parse(userData);
 
@@ -64,7 +65,16 @@ const ProductBanner = ({product}) => {
         <div className="grid grid-cols-1 lg:grid-cols-[340px_200px_1fr] gap-x-12 gap-y-8">
           {/* Column 1: Image */}
           <div className="w-full bg-[#cc55ff] rounded-2xl aspect-square flex items-center justify-center p-3 shadow-2xl overflow-hidden relative group">
-            <img src={product.img} className="w-full h-full object-cover rounded-xl shadow-inner group-hover:scale-105 transition duration-500" alt="ChatGPT Plus" />
+            {imgFailed ? (
+              <div
+                className="w-full h-full rounded-xl flex items-center justify-center text-white font-bold text-xl text-center p-4 select-none"
+                style={{ backgroundColor: ['#e85a21','#3b82f6','#22c55e','#a855f7','#ec4899','#f59e0b','#06b6d4','#ef4444'][(product.name||'').length % 8] }}
+              >
+                {product.name || 'Sản phẩm'}
+              </div>
+            ) : (
+              <img src={product.img} className="w-full h-full object-cover rounded-xl shadow-inner group-hover:scale-105 transition duration-500" alt={product.name || ''} onError={() => setImgFailed(true)} />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition">
               <span className="text-white font-bold text-xl tracking-wide drop-shadow-md">ChatGPT</span>
             </div>

@@ -108,7 +108,7 @@ const CategoryPage = () => {
                     src={product.img}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/products/youtube-premium.png'; }}
+                    onError={(e) => { const el = e.target as HTMLImageElement; el.src = 'https://placehold.co/110x110/' + ['e85a21','3b82f6','22c55e','a855f7','ec4899','f59e0b','06b6d4','ef4444'][product.name.length%8] + '/white?text=' + encodeURIComponent(product.name.substring(0,20)); }}
                   />
                   {calcDiscount(product.priceOri, product.price) > 0 && (
                     <div className="absolute top-1 left-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">

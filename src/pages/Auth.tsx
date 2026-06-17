@@ -8,14 +8,25 @@ import { useAuth } from '../context/AuthContext';
 const Auth = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
-  const [isRemember, setIsRemember] = useState(false);
 
   // Login state
+  const [isLogin, setIsLogin] = useState(true);
+  const [isRemember, setIsRemember] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+
+  const loginFacebook = () => {
+    const appId = '2107794746788457';
+    const redirectUri = 'http://localhost:5173/facebook-callback';
+    const url = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&response_type=token&scope=public_profile`;
+    window.location.href = url;
+  };
+
+  const loginGoogle = () => {
+    window.location.href = "http://localhost:8080/oauth2/authorization/google";
+  };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,10 +194,16 @@ const Auth = () => {
 
                 <div>
                   <p className="font-bold text-[#0f172a] text-[14.5px] mt-1 mb-3">Đăng nhập bằng mạng xã hội</p>
-                  <button type="button" className="flex items-center justify-center gap-3 bg-[#f2f2f2] hover:bg-gray-200 text-[#0f172a] font-bold py-3.5 rounded transition-colors w-full shadow-sm">
-                    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.74 12.27c0-.86-.07-1.68-.21-2.47H12v4.67h6.58c-.28 1.51-1.12 2.79-2.39 3.65v3.02h3.87c2.26-2.09 3.68-5.17 3.68-8.87z" /><path fill="#34A853" d="M12 24c3.31 0 6.08-1.1 8.11-2.97l-3.87-3.02c-1.1.74-2.51 1.18-4.24 1.18-3.26 0-6.02-2.2-7.01-5.16H1.02v3.13C3.06 21.05 7.21 24 12 24z" /><path fill="#FBBC05" d="M4.99 14.03A7.05 7.05 0 014.62 12c0-.71.13-1.4.37-2.03V6.84H1.02C.37 8.15 0 9.7 0 12s.37 3.85 1.02 5.16l3.97-3.13z" /><path fill="#EA4335" d="M12 4.79c1.8 0 3.42.62 4.7 1.83l3.53-3.53C18.07 1.1 15.3 0 12 0 7.21 0 3.06 2.95 1.02 6.84l3.97 3.13c.99-2.96 3.75-5.18 7.01-5.18z" /></svg>
-                    <span className="text-[15px]">Đăng nhập Google</span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => loginGoogle()} type="button" className="flex items-center justify-center gap-3 bg-[#f2f2f2] hover:bg-gray-200 text-[#0f172a] font-bold py-3.5 rounded transition-colors w-full shadow-sm">
+                      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.74 12.27c0-.86-.07-1.68-.21-2.47H12v4.67h6.58c-.28 1.51-1.12 2.79-2.39 3.65v3.02h3.87c2.26-2.09 3.68-5.17 3.68-8.87z" /><path fill="#34A853" d="M12 24c3.31 0 6.08-1.1 8.11-2.97l-3.87-3.02c-1.1.74-2.51 1.18-4.24 1.18-3.26 0-6.02-2.2-7.01-5.16H1.02v3.13C3.06 21.05 7.21 24 12 24z" /><path fill="#FBBC05" d="M4.99 14.03A7.05 7.05 0 014.62 12c0-.71.13-1.4.37-2.03V6.84H1.02C.37 8.15 0 9.7 0 12s.37 3.85 1.02 5.16l3.97-3.13z" /><path fill="#EA4335" d="M12 4.79c1.8 0 3.42.62 4.7 1.83l3.53-3.53C18.07 1.1 15.3 0 12 0 7.21 0 3.06 2.95 1.02 6.84l3.97 3.13c.99-2.96 3.75-5.18 7.01-5.18z" /></svg>
+                      <span className="text-[15px]">Google</span>
+                    </button>
+                    <button onClick={() => loginFacebook()} type="button" className="flex items-center justify-center gap-3 bg-[#f2f2f2] hover:bg-gray-200 text-[#0f172a] font-bold py-3.5 rounded transition-colors w-full shadow-sm">
+                      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                      <span className="text-[15px]">Facebook</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-1">
