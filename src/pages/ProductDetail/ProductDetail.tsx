@@ -41,7 +41,7 @@ const ProductDetail = () => {
           <ProductDescription />
           <ProductInfo />
           <ProductReviews productId={Number(productId)} />
-          <ProductComments productId={Number(productId)} />
+          <ProductComments productId={Number(productId)} sellerId={product?.seller?.id} />
         </div>
       </main>
 
