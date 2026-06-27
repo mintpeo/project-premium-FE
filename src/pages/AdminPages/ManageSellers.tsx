@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Eye } from 'lucide-react';
 
 interface Seller {
   id: number;
@@ -13,6 +14,9 @@ interface Seller {
 const ManageSellers = () => {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
+  const [productModal, setProductModal] = useState<{ open: boolean; seller: Seller | null; products: any[]; loading: boolean }>({
+    open: false, seller: null, products: [], loading: false,
+  });
 
   useEffect(() => {
     fetchSellers();
@@ -49,6 +53,17 @@ const ManageSellers = () => {
       await fetchSellers();
     } catch (err: any) {
       alert('Lỗi: ' + (err.message || 'Không thể cấm'));
+    }
+  };
+
+  const viewProducts = async (seller: Seller) => {
+    setProductModal({ open: true, seller, products: [], loading: true });
+    try {
+      const res = await fetch(`http://localhost:8080/api/seller/products/${seller.id}`);
+      const data = res.ok ? await res.json() : [];
+      setProductModal(prev => ({ ...prev, products: Array.isArray(data) ? data : [], loading: false }));
+    } catch {
+      setProductModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -112,10 +127,14 @@ const ManageSellers = () => {
                   <div>
                     <p className="text-sm font-semibold text-gray-900">{seller.fullName}</p>
                     <p className="text-xs text-gray-400">{seller.email} · {seller.phoneNumber}</p>
-                    <p className="text-xs text-gray-400">{seller.productCount} sản phẩm · Đã tham gia {new Date(seller.createdAt).toLocaleDateString('vi-VN')}</p>
+                    <p className="text-xs text-gray-400">{seller.productCount} sản phẩm · Đã tham gia {new Date(seller.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  <button onClick={() => viewProducts(seller)}
+                    className="admin-btn-icon-sm text-gray-400 hover:text-blue-600 hover:bg-blue-50" title="Xem sản phẩm">
+                    <Eye size={16} />
+                  </button>
                   <span className={seller.sellerVerified ? 'admin-badge-success' : 'admin-badge-error'}>
                     <span className="admin-badge-dot" />
                     {seller.sellerVerified ? 'Đã duyệt' : 'Chờ duyệt'}
@@ -139,6 +158,67 @@ const ManageSellers = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {productModal.open && (
+        <div className="admin-modal-overlay" onClick={() => setProductModal(prev => ({ ...prev, open: false }))}>
+          <div className="admin-modal max-w-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Sản phẩm của: {productModal.seller?.fullName}
+                  </h3>
+                </div>
+                <button onClick={() => setProductModal(prev => ({ ...prev, open: false }))}
+                  className="admin-btn-icon text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {productModal.loading ? (
+                <div className="space-y-3 py-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="admin-skeleton w-10 h-10 rounded-xl shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="admin-skeleton h-4 w-48" />
+                        <div className="admin-skeleton h-3 w-24" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : productModal.products.length === 0 ? (
+                <div className="admin-empty py-10">
+                  <svg className="w-14 h-14 text-gray-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                  <p className="admin-empty-title">Chưa có sản phẩm</p>
+                  <p className="admin-empty-desc">Người bán này chưa đăng sản phẩm nào</p>
+                </div>
+              ) : (
+                <div className="max-h-[420px] overflow-y-auto -mx-2 px-2 space-y-2">
+                  {productModal.products.map((prod: any) => (
+                    <div key={prod.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+                      <img src={prod.img || '/assets/placeholder.png'} alt={prod.name}
+                        className="w-11 h-11 rounded-xl object-cover shadow-sm shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{prod.name}</p>
+                        <p className="text-xs text-gray-400">ID: {prod.id}</p>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                        {prod.price?.toLocaleString('vi-VN')}đ
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -19,8 +19,8 @@ interface Order {
 }
 
 const statusLabels: Record<string, string> = {
-  PENDING: 'Chờ xác nhận',
-  PROCESSING: 'Đang xử lý',
+  PENDING: 'Chờ thanh toán',
+  PROCESSING: 'Chờ xác nhận',
   SUCCESS: 'Hoàn thành',
   CANCELLED: 'Đã huỷ',
 };
@@ -160,7 +160,7 @@ const ProcessOrders = () => {
                       <span className="font-mono text-sm font-medium text-blue-600">#PK-{order.id}</span>
                     </td>
                     <td className="text-xs text-gray-400">
-                      {new Date(order.orderDate).toLocaleDateString('vi-VN')}
+                      {new Date(order.orderDate).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
                     </td>
                     <td className="text-sm font-medium text-gray-900">{order.fullName || '—'}</td>
                     <td className="text-sm text-gray-500">{order.phoneNumber || '—'}</td>

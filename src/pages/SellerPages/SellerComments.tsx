@@ -270,7 +270,7 @@ const SellerComments = () => {
                     <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Mới</span>
                   )}
                 </div>
-                <span className="text-xs text-gray-400">{comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('vi-VN') : ''}</span>
+                <span className="text-xs text-gray-400">{comment.createdAt ? new Date(comment.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : ''}</span>
               </div>
               <p className="text-gray-700 text-sm mt-1">{comment.content}</p>
             </div>
@@ -412,7 +412,7 @@ const SellerComments = () => {
                                   <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Mới</span>
                                 )}
                               </div>
-                              <span className="text-xs text-gray-400">{review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : ''}</span>
+                              <span className="text-xs text-gray-400">{review.createdAt ? new Date(review.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : ''}</span>
                             </div>
                             <div className="text-yellow-500 text-xs mb-1">{renderStars(review.rating || 5)}</div>
                             <p className="text-gray-700 text-sm mt-1">{review.content}</p>

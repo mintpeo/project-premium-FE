@@ -31,8 +31,8 @@ interface Order {
 }
 
 const statusLabels: Record<string, string> = {
-  PENDING: 'Chờ xác nhận',
-  PROCESSING: 'Đang xử lý',
+  PENDING: 'Chờ thanh toán',
+  PROCESSING: 'Chờ xác nhận',
   SUCCESS: 'Hoàn thành',
   CANCELLED: 'Đã huỷ',
 };
@@ -47,10 +47,33 @@ const ManageOrders = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const [lastSeen, setLastSeen] = useState<number>(() => {
+    const saved = localStorage.getItem('orders_last_seen');
+    return saved ? Number(saved) : Date.now();
+  });
 
   useEffect(() => {
     fetchOrders();
+    const onVisible = () => { if (!document.hidden) fetchOrders(); };
+    const onOrderUpdate = () => fetchOrders();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('order-update', onOrderUpdate);
+    window.addEventListener('storage', (e) => { if (e.key === 'order_update') fetchOrders(); });
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('order-update', onOrderUpdate);
+    };
   }, []);
+
+  const handleFilterClick = (s: string) => {
+    setStatusFilter(s);
+    if (s === 'SUCCESS' || s === 'CANCELLED') {
+      const now = Date.now();
+      setLastSeen(now);
+      localStorage.setItem('orders_last_seen', String(now));
+    }
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -89,13 +112,20 @@ const ManageOrders = () => {
     }
   };
 
-  const filtered = statusFilter ? orders.filter(o => o.orderStatus === statusFilter) : orders;
+  const filtered = orders.filter(o => {
+    if (statusFilter && o.orderStatus !== statusFilter) return false;
+    if (!searchText) return true;
+    const q = searchText.toLowerCase();
+    const name = (o.fullName || o.user?.fullName || '').toLowerCase();
+    const email = (o.user?.email || '').toLowerCase();
+    return name.includes(q) || email.includes(q) || String(o.id).includes(q);
+  });
 
   const statusBadge = (status: string) => {
     switch (status) {
       case 'SUCCESS': return 'admin-badge-success';
-      case 'PROCESSING': return 'admin-badge-info';
-      case 'PENDING': return 'admin-badge-warning';
+      case 'PROCESSING': return 'admin-badge-warning';
+      case 'PENDING': return 'admin-badge-default';
       case 'CANCELLED': return 'admin-badge-error';
       default: return 'admin-badge-default';
     }
@@ -133,6 +163,13 @@ const ManageOrders = () => {
             <span className="admin-page-count">{filtered.length} đơn</span>
           </div>
           <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 max-w-[200px] w-full">
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" placeholder="Tìm mã, tên, email..." value={searchText} onChange={e => setSearchText(e.target.value)}
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none" />
+          </div>
           <a href="http://localhost:8080/api/admin/export/orders"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,12 +178,23 @@ const ManageOrders = () => {
             Xuất Excel
           </a>
           <div className="flex gap-1.5">
-          {['', 'PENDING', 'PROCESSING', 'SUCCESS', 'CANCELLED'].map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)}
-              className={statusFilter === s ? 'admin-filter-active' : 'admin-filter-inactive'}>
+          {['', 'PENDING', 'PROCESSING', 'SUCCESS', 'CANCELLED'].map(s => {
+            const total = s ? orders.filter(o => o.orderStatus === s).length : 0;
+            const newCount = s === 'SUCCESS' || s === 'CANCELLED'
+              ? orders.filter(o => o.orderStatus === s && new Date(o.orderDate).getTime() > lastSeen).length
+              : total;
+            return (
+            <button key={s} onClick={() => handleFilterClick(s)}
+              className={`relative ${statusFilter === s ? 'admin-filter-active' : 'admin-filter-inactive'}`}>
               {s ? statusLabels[s] : 'Tất cả'}
+              {newCount > 0 && (
+                <span className="absolute -top-2 -right-2 inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full leading-none shadow-sm ring-2 ring-white">
+                  {newCount}
+                </span>
+              )}
             </button>
-          ))}
+          );
+          })}
         </div>
       </div>
       </div>
@@ -157,7 +205,7 @@ const ManageOrders = () => {
             <thead>
               <tr>
                 <th>Mã đơn hàng</th>
-                <th>Ngày</th>
+                <th>Thời gian</th>
                 <th>Khách hàng</th>
                 <th className="text-right">Tổng tiền</th>
                 <th className="text-center">Thanh toán</th>
@@ -173,7 +221,7 @@ const ManageOrders = () => {
                       <span className="font-mono text-sm font-medium text-blue-600">#PK-{order.id}</span>
                     </td>
                     <td className="text-gray-400 text-xs">
-                      {new Date(order.orderDate).toLocaleDateString('vi-VN')}
+                      {new Date(order.orderDate).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
                     </td>
                     <td>
                       <p className="text-sm font-medium text-gray-900">{order.fullName || order.user?.fullName || '—'}</p>
@@ -217,10 +265,10 @@ const ManageOrders = () => {
                           className="admin-select text-xs py-1 px-2 max-w-[100px]"
                         >
                           <option value="">Cập nhật</option>
-                          {order.orderStatus !== 'PENDING' && <option value="PENDING">Chờ xác nhận</option>}
-                          {order.orderStatus !== 'PROCESSING' && <option value="PROCESSING">Đang xử lý</option>}
-                          {order.orderStatus !== 'SUCCESS' && <option value="SUCCESS">Hoàn thành</option>}
-                          {order.orderStatus !== 'CANCELLED' && <option value="CANCELLED">Đã huỷ</option>}
+                          {order.orderStatus !== 'PENDING' && <option value="PENDING">{statusLabels.PENDING}</option>}
+                          {order.orderStatus !== 'PROCESSING' && <option value="PROCESSING">{statusLabels.PROCESSING}</option>}
+                          {order.orderStatus !== 'SUCCESS' && <option value="SUCCESS">{statusLabels.SUCCESS}</option>}
+                          {order.orderStatus !== 'CANCELLED' && <option value="CANCELLED">{statusLabels.CANCELLED}</option>}
                         </select>
                       </div>
                     </td>

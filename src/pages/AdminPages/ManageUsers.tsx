@@ -20,6 +20,10 @@ const ManageUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [resetUserId, setResetUserId] = useState<number | null>(null);
+  const [newPassword, setNewPassword] = useState('123456');
+  const [saving, setSaving] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -31,7 +35,8 @@ const ManageUsers = () => {
     try {
       const res = await fetch('http://localhost:8080/api/admin/users');
       if (!res.ok) throw new Error('Không thể tải danh sách người dùng');
-      setUsers(await res.json());
+      const data: User[] = await res.json();
+      setUsers(data.filter(u => u.role !== 'ADMIN'));
     } catch (err: any) {
       setError(err.message || 'Lỗi kết nối');
     } finally {
@@ -65,19 +70,24 @@ const ManageUsers = () => {
     }
   };
 
-  const handleResetPassword = async (userId: number) => {
-    const newPassword = window.prompt('Nhập mật khẩu mới cho người dùng này:', '123456');
-    if (!newPassword) return;
+  const handleResetPassword = async () => {
+    if (resetUserId === null || !newPassword) return;
+    setSaving(true);
+    setNotification(null);
     try {
-      const res = await fetch(`http://localhost:8080/api/admin/users/${userId}/reset-password`, {
+      const res = await fetch(`http://localhost:8080/api/admin/users/${resetUserId}/reset-password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: newPassword }),
       });
       if (!res.ok) throw new Error('Reset mật khẩu thất bại');
-      alert('Đã reset mật khẩu thành công!');
+      setNotification({ type: 'success', message: 'Đã reset mật khẩu thành công!' });
+      setResetUserId(null);
+      setNewPassword('123456');
     } catch (err: any) {
-      alert('Lỗi: ' + (err.message || 'Không thể reset mật khẩu'));
+      setNotification({ type: 'error', message: err.message || 'Không thể reset mật khẩu' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -120,7 +130,7 @@ const ManageUsers = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <>
       <div className="admin-page-header">
         <div className="admin-page-title">
           <div className="accent-dot" />
@@ -135,6 +145,26 @@ const ManageUsers = () => {
           Xuất Excel
         </a>
       </div>
+
+      {notification && (
+        <div className={`px-4 py-3 rounded-xl text-sm font-medium ${
+          notification.type === 'success'
+            ? 'bg-green-50 text-green-700 border border-green-200'
+            : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {notification.type === 'success' ? (
+            <svg className="inline w-4 h-4 mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ) : (
+            <svg className="inline w-4 h-4 mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
+          {notification.message}
+          <button onClick={() => setNotification(null)} className="float-right text-current opacity-50 hover:opacity-100">&times;</button>
+        </div>
+      )}
 
       {error ? (
         <div className="admin-card">
@@ -184,7 +214,7 @@ const ManageUsers = () => {
                       </span>
                     </td>
                     <td className="text-gray-400 text-xs">
-                      {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                      {new Date(user.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
                     </td>
                     <td className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -210,7 +240,7 @@ const ManageUsers = () => {
                             </svg>
                           )}
                         </button>
-                        <button onClick={() => handleResetPassword(user.id)}
+                        <button onClick={() => { setResetUserId(user.id); setNewPassword('123456'); setNotification(null); }}
                           className="admin-btn-icon-sm text-amber-600 hover:bg-amber-50"
                           title="Reset mật khẩu">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,7 +256,38 @@ const ManageUsers = () => {
           </div>
         </div>
       )}
-    </div>
+      {resetUserId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { if (!saving) setResetUserId(null); }}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Reset mật khẩu</h3>
+            <p className="text-sm text-gray-500 mb-4">Nhập mật khẩu mới cho người dùng ID: <strong>{resetUserId}</strong></p>
+            <input
+              type="text"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              className="admin-input w-full mb-6"
+              autoFocus
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setResetUserId(null); setNewPassword('123456'); }}
+                disabled={saving}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={handleResetPassword}
+                disabled={saving || !newPassword}
+                className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-xl hover:bg-amber-700 transition-colors disabled:opacity-50"
+              >
+                {saving ? 'Đang xử lý...' : 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

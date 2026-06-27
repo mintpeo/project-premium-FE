@@ -127,7 +127,7 @@ const ManageRefunds = () => {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400 mt-3">{new Date(req.createdAt).toLocaleDateString('vi-VN')}</p>
+                  <p className="text-xs text-gray-400 mt-3">{new Date(req.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}</p>
                 </div>
                 {req.status === 'PENDING' && (
                   <div className="flex flex-col gap-2 shrink-0">
