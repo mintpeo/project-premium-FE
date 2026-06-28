@@ -52,7 +52,7 @@ const SellerComments = () => {
       return next;
     });
     // Remove "Mới" badge from the parent and its direct replies
-    setComments(prev => prev.map(c => 
+    setComments(prev => prev.map(c =>
       c.id === commentId || c.parentId === commentId ? { ...c, isRead: true } : c
     ));
   };
@@ -60,7 +60,7 @@ const SellerComments = () => {
   const countComments = (nodes: Comment[]): number => {
     return nodes.reduce((acc, node) => acc + 1 + countComments(node.replies || []), 0);
   };
-  
+
   const countUnread = (nodes: Comment[]): number => {
     return nodes.reduce((acc, node) => acc + (node.isRead ? 0 : 1) + countUnread(node.replies || []), 0);
   };
@@ -181,15 +181,15 @@ const SellerComments = () => {
   }, {} as Record<number, Comment[]>);
 
   const groupedComments: Record<number, Comment[]> = {};
-  
+
   // Build N-level tree for each product
   Object.keys(groupedCommentsRaw).forEach(pidStr => {
     const pid = Number(pidStr);
     const productComments = groupedCommentsRaw[pid];
-    
+
     const map = new Map<number, Comment>();
     productComments.forEach(c => map.set(c.id, { ...c, replies: [] }));
-    
+
     const roots: Comment[] = [];
     productComments.forEach(c => {
       const node = map.get(c.id)!;
@@ -212,7 +212,7 @@ const SellerComments = () => {
       });
     };
     sortTree(roots);
-    
+
     groupedComments[pid] = roots;
   });
 
@@ -220,7 +220,7 @@ const SellerComments = () => {
     const product = products[productId];
     const isExpanded = expandedProductIds.has(productId);
     return (
-      <div 
+      <div
         className="flex items-center justify-between p-4 bg-gray-50 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 rounded-t-xl"
         onClick={() => toggleProduct(productId, unreadCount, type)}
       >
@@ -270,7 +270,7 @@ const SellerComments = () => {
                     <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Mới</span>
                   )}
                 </div>
-                <span className="text-xs text-gray-400">{comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('vi-VN') : ''}</span>
+                <span className="text-xs text-gray-400">{comment.createdAt ? new Date(comment.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : ''}</span>
               </div>
               <p className="text-gray-700 text-sm mt-1">{comment.content}</p>
             </div>
@@ -289,11 +289,11 @@ const SellerComments = () => {
                 <button onClick={() => setReplyingId(null)} className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 bg-gray-100 rounded-lg transition hover:bg-gray-200">Huỷ</button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => {
                   setReplyingId(comment.id);
                   setComments(prev => prev.map(c => c.id === comment.id ? { ...c, isRead: true } : c));
-                }} 
+                }}
                 className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition mt-2 ml-2"
               >
                 <Reply size={12} /> Phản hồi
@@ -301,12 +301,12 @@ const SellerComments = () => {
             )}
           </div>
         </div>
-        
+
         {/* Render child replies recursively */}
         {comment.replies && comment.replies.length > 0 && (
           <div className="mt-2">
             {!expandedComments.has(comment.id) ? (
-              <button 
+              <button
                 onClick={() => toggleReplies(comment.id)}
                 className="flex items-center gap-2 text-xs font-medium text-blue-600 hover:text-blue-800 transition py-1"
               >
@@ -320,7 +320,7 @@ const SellerComments = () => {
               </button>
             ) : (
               <>
-                <button 
+                <button
                   onClick={() => toggleReplies(comment.id)}
                   className="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-700 transition mb-2 py-1"
                 >
@@ -396,7 +396,7 @@ const SellerComments = () => {
               return (
                 <div key={productId} className="admin-card p-0 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   {renderProductHeader(productId, productReviews.length, unreadCount, 'review')}
-                  
+
                   {isExpanded && (
                     <div className="p-4 bg-white">
                       {productReviews.map(review => (
@@ -412,7 +412,7 @@ const SellerComments = () => {
                                   <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Mới</span>
                                 )}
                               </div>
-                              <span className="text-xs text-gray-400">{review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : ''}</span>
+                              <span className="text-xs text-gray-400">{review.createdAt ? new Date(review.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : ''}</span>
                             </div>
                             <div className="text-yellow-500 text-xs mb-1">{renderStars(review.rating || 5)}</div>
                             <p className="text-gray-700 text-sm mt-1">{review.content}</p>
@@ -441,14 +441,14 @@ const SellerComments = () => {
             {Object.entries(groupedComments).map(([productIdStr, productCommentsTree]) => {
               const productId = Number(productIdStr);
               const isExpanded = expandedProductIds.has(productId);
-              
+
               const totalCountRaw = groupedCommentsRaw[productId].length;
               const unreadCount = readProductIds.has(productId) ? 0 : groupedCommentsRaw[productId].filter(c => !c.isRead).length;
 
               return (
                 <div key={productId} className="admin-card p-0 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   {renderProductHeader(productId, totalCountRaw, unreadCount, 'comment')}
-                  
+
                   {isExpanded && (
                     <div className="p-4 bg-white">
                       {productCommentsTree.map(comment => renderCommentThread(comment, 0))}

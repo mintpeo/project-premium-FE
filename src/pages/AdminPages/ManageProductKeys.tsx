@@ -149,7 +149,7 @@ const ManageProductKeys = () => {
                       <span className="admin-badge-success"><span className="admin-badge-dot" />Còn</span>
                     )}
                   </td>
-                  <td className="text-center text-xs text-gray-400">{new Date(k.createdAt).toLocaleDateString('vi-VN')}</td>
+                  <td className="text-center text-xs text-gray-400">{new Date(k.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
                   <td className="text-right">
                     {!k.sold && (
                       <button onClick={() => handleDelete(k.id)} className="admin-btn-icon-sm text-gray-400 hover:text-red-600 hover:bg-red-50">

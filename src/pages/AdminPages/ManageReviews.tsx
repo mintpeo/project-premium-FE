@@ -135,7 +135,7 @@ const ManageReviews = () => {
                       </div>
                       <p className="text-sm text-gray-600 mt-2 leading-relaxed">{review.content}</p>
                       <p className="text-xs text-gray-400 mt-2">
-                        Mã sản phẩm: #{review.productId} · {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                        Mã sản phẩm: #{review.productId} · {new Date(review.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
                       </p>
                     </div>
                   </div>

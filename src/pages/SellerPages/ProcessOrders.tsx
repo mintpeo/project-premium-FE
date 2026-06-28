@@ -5,24 +5,36 @@ interface OrderItem {
   id: number;
   product: { id: number; name: string; img: string };
   quantity: number;
+  typeUser: string;
+  duration: string;
+  keyCode: string;
   price: number;
 }
 
 interface Order {
   id: number;
+  user: { id: number; email: string; fullName: string };
   fullName: string;
   phoneNumber: string;
+  paymentMethod: string;
+  paymentStatus: string;
   orderStatus: string;
   orderDate: string;
+  note: string;
   totalPrice: number;
   orderItems: OrderItem[];
 }
 
 const statusLabels: Record<string, string> = {
-  PENDING: 'Chờ xác nhận',
-  PROCESSING: 'Đang xử lý',
+  PENDING: 'Chờ thanh toán',
+  PROCESSING: 'Chờ xác nhận',
   SUCCESS: 'Hoàn thành',
   CANCELLED: 'Đã huỷ',
+};
+
+const paymentLabels: Record<string, string> = {
+  PENDING: 'Chưa thanh toán',
+  PAID: 'Đã thanh toán',
 };
 
 const nextStatuses: Record<string, { label: string; status: string }[]> = {
@@ -37,11 +49,35 @@ const ProcessOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [searchText, setSearchText] = useState('');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [lastSeen, setLastSeen] = useState<number>(() => {
+    const saved = localStorage.getItem('seller_orders_last_seen');
+    return saved ? Number(saved) : Date.now();
+  });
 
   useEffect(() => {
     if (user) fetchOrders();
+    const onVisible = () => { if (!document.hidden) fetchOrders(); };
+    const onOrderUpdate = () => fetchOrders();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('order-update', onOrderUpdate);
+    window.addEventListener('storage', (e) => { if (e.key === 'order_update') fetchOrders(); });
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('order-update', onOrderUpdate);
+    };
   }, [user]);
+
+  const handleFilterClick = (s: string) => {
+    setStatusFilter(s);
+    if (s === 'SUCCESS' || s === 'CANCELLED') {
+      const now = Date.now();
+      setLastSeen(now);
+      localStorage.setItem('seller_orders_last_seen', String(now));
+    }
+  };
 
   const fetchOrders = async () => {
     if (!user) return;
@@ -78,14 +114,21 @@ const ProcessOrders = () => {
   const statusBadge = (status: string) => {
     switch (status) {
       case 'SUCCESS': return 'admin-badge-success';
-      case 'PROCESSING': return 'admin-badge-info';
-      case 'PENDING': return 'admin-badge-warning';
+      case 'PROCESSING': return 'admin-badge-warning';
+      case 'PENDING': return 'admin-badge-default';
       case 'CANCELLED': return 'admin-badge-error';
       default: return 'admin-badge-default';
     }
   };
 
-  const filtered = statusFilter ? orders.filter(o => o.orderStatus === statusFilter) : orders;
+  const filtered = orders.filter(o => {
+    if (statusFilter && o.orderStatus !== statusFilter) return false;
+    if (!searchText) return true;
+    const q = searchText.toLowerCase();
+    const name = (o.fullName || o.user?.fullName || '').toLowerCase();
+    const email = (o.user?.email || '').toLowerCase();
+    return name.includes(q) || email.includes(q) || String(o.id).includes(q);
+  });
 
   if (loading) {
     return (
@@ -118,54 +161,72 @@ const ProcessOrders = () => {
           <h1>Xử lý đơn hàng</h1>
           <span className="admin-page-count">{filtered.length} đơn</span>
         </div>
-        <div className="flex gap-1.5">
-          {['', 'PENDING', 'PROCESSING', 'SUCCESS', 'CANCELLED'].map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)}
-              className={statusFilter === s ? 'admin-filter-active' : 'admin-filter-inactive'}>
-              {s ? statusLabels[s] : 'Tất cả'}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 max-w-[200px] w-full">
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" placeholder="Tìm mã, tên, email..." value={searchText} onChange={e => setSearchText(e.target.value)}
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none" />
+          </div>
+          <div className="flex gap-1.5">
+            {['', 'PENDING', 'PROCESSING', 'SUCCESS', 'CANCELLED'].map(s => {
+              const total = s ? orders.filter(o => o.orderStatus === s).length : 0;
+              const newCount = s === 'SUCCESS' || s === 'CANCELLED'
+                ? orders.filter(o => o.orderStatus === s && new Date(o.orderDate).getTime() > lastSeen).length
+                : total;
+              return (
+                <button key={s} onClick={() => handleFilterClick(s)}
+                  className={`relative ${statusFilter === s ? 'admin-filter-active' : 'admin-filter-inactive'}`}>
+                  {s ? statusLabels[s] : 'Tất cả'}
+                  {newCount > 0 && (
+                    <span className="absolute -top-2 -right-2 inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full leading-none shadow-sm ring-2 ring-white">
+                      {newCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="admin-card">
-          <div className="admin-empty">
-            <svg className="admin-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-            <p className="admin-empty-title">Chưa có đơn hàng nào</p>
-            <p className="admin-empty-desc">Các đơn hàng sẽ xuất hiện tại đây</p>
-          </div>
-        </div>
-      ) : (
-        <div className="admin-card">
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Mã đơn hàng</th>
-                  <th>Ngày</th>
-                  <th>Khách hàng</th>
-                  <th>Số điện thoại</th>
-                  <th className="text-right">Tổng tiền</th>
-                  <th className="text-center">Trạng thái</th>
-                  <th className="text-center">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(order => (
-                  <tr key={order.id}>
+      <div className="admin-card">
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Mã đơn hàng</th>
+                <th>Thời gian</th>
+                <th>Khách hàng</th>
+                <th className="text-right">Tổng tiền</th>
+                <th className="text-center">Thanh toán</th>
+                <th className="text-center">Trạng thái</th>
+                <th className="text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(order => (
+                <React.Fragment key={order.id}>
+                  <tr className="cursor-pointer" onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}>
                     <td>
                       <span className="font-mono text-sm font-medium text-blue-600">#PK-{order.id}</span>
                     </td>
-                    <td className="text-xs text-gray-400">
-                      {new Date(order.orderDate).toLocaleDateString('vi-VN')}
+                    <td className="text-gray-400 text-xs">
+                      {new Date(order.orderDate).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
                     </td>
-                    <td className="text-sm font-medium text-gray-900">{order.fullName || '—'}</td>
-                    <td className="text-sm text-gray-500">{order.phoneNumber || '—'}</td>
+                    <td>
+                      <p className="text-sm font-medium text-gray-900">{order.fullName || order.user?.fullName || '—'}</p>
+                      <p className="text-xs text-gray-400">{order.user?.email}</p>
+                    </td>
                     <td className="text-right font-semibold text-gray-900">
                       {order.totalPrice.toLocaleString('vi-VN')}đ
+                    </td>
+                    <td className="text-center">
+                      <span className={order.paymentStatus === 'PAID' ? 'admin-badge-success' : 'admin-badge-default'}>
+                        <span className="admin-badge-dot" />
+                        {paymentLabels[order.paymentStatus] || order.paymentStatus}
+                      </span>
                     </td>
                     <td className="text-center">
                       <span className={statusBadge(order.orderStatus)}>
@@ -173,11 +234,17 @@ const ProcessOrders = () => {
                         {statusLabels[order.orderStatus] || order.orderStatus}
                       </span>
                     </td>
-                    <td className="text-center">
-                      <div className="flex items-center justify-center gap-1">
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); setExpandedId(expandedId === order.id ? null : order.id); }}
+                          className="admin-btn-icon-sm text-gray-400 hover:text-blue-600 hover:bg-blue-50">
+                          <svg className={`w-4 h-4 transition-transform ${expandedId === order.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
                         {nextStatuses[order.orderStatus]?.map(action => (
                           <button key={action.status}
-                            onClick={() => handleUpdateStatus(order.id, action.status)}
+                            onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id, action.status); }}
                             disabled={updatingId === order.id}
                             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all disabled:opacity-50 ${
                               action.status === 'CANCELLED'
@@ -192,12 +259,79 @@ const ProcessOrders = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  {expandedId === order.id && (
+                    <tr>
+                      <td colSpan={7} className="p-0">
+                        <div className="bg-gray-50/70 border-t border-gray-100 animate-fade-in">
+                          <div className="p-5 space-y-5">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              {[
+                                { label: 'Số điện thoại', value: order.phoneNumber || '—' },
+                                { label: 'Phương thức', value: order.paymentMethod || '—' },
+                                { label: 'Ghi chú', value: order.note || '—' },
+                                { label: 'Mã đơn hàng', value: `#${order.id}`, mono: true },
+                              ].map((item, i) => (
+                                <div key={i} className="bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
+                                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{item.label}</p>
+                                  <p className={`text-sm font-semibold text-gray-900 mt-1 ${item.mono ? 'font-mono' : ''}`}>{item.value}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                                <p className="text-sm font-semibold text-gray-700">Sản phẩm trong đơn</p>
+                              </div>
+                              <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                                {order.orderItems?.map((item, i) => (
+                                  <div key={i} className="flex items-center gap-4 p-3.5">
+                                    <img src={item.product?.img || '/assets/netflix-logo.png'}
+                                      alt={item.product?.name} className="w-10 h-10 rounded-lg object-cover shadow-sm" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">{item.product?.name}</p>
+                                      <p className="text-xs text-gray-400 mt-0.5">
+                                        {[item.duration, item.typeUser, `x${item.quantity}`].filter(Boolean).join(' · ')}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-sm font-semibold text-gray-900">{item.price?.toLocaleString('vi-VN')}đ</p>
+                                      {item.keyCode && (
+                                        <span className="admin-tag mt-1">
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                          </svg>
+                                          {item.keyCode}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7}>
+                    <div className="admin-empty">
+                      <svg className="admin-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                      <p className="admin-empty-title">Không có đơn hàng</p>
+                      <p className="admin-empty-desc">{statusFilter ? 'Không có đơn hàng với trạng thái này' : 'Chưa có đơn hàng nào'}</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };

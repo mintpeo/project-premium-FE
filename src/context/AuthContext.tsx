@@ -27,6 +27,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   });
 
+  useEffect(() => {
+    if (!user) return;
+    fetch(`http://localhost:8080/api/user/profile/${user.id}`)
+      .then(res => { if (res.status === 400 || res.status === 404) logout(); })
+      .catch(() => logout());
+  }, []);
+
   const login = (userData: AuthUser) => {
     setUser(userData);
     localStorage.setItem('auth_user', JSON.stringify(userData));

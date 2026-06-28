@@ -154,7 +154,7 @@ const ApprovePayments = () => {
                         <td className="py-3 px-2 text-gray-800">{earning.productName}</td>
                         <td className="py-3 px-2 text-gray-500">#{earning.orderId}</td>
                         <td className="py-3 px-2 text-right font-medium text-gray-900">{earning.amount.toLocaleString('vi-VN')}đ</td>
-                        <td className="py-3 px-2 text-right text-gray-500">{new Date(earning.createdAt).toLocaleDateString('vi-VN')}</td>
+                        <td className="py-3 px-2 text-right text-gray-500">{new Date(earning.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
                         <td className="py-3 px-2 text-right">
                           <button
                             onClick={() => approveOne(earning.id)}

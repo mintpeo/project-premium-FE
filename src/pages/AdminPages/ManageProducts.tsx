@@ -29,6 +29,7 @@ const ManageProducts = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'platform' | 'seller' | 'pending'>('all');
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [search, setSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,7 +47,7 @@ const ManageProducts = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8080/api/product/all');
+      const res = await fetch('http://localhost:8080/api/admin/products');
       if (!res.ok) throw new Error('Không thể tải danh sách sản phẩm');
       setProducts(await res.json());
     } catch {
@@ -126,14 +127,18 @@ const ManageProducts = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc muốn xoá sản phẩm này?')) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setSaving(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/admin/products/${id}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:8080/api/admin/products/${deleteTarget.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Xoá thất bại');
+      setDeleteTarget(null);
       await fetchProducts();
     } catch (err: any) {
       alert('Lỗi: ' + (err.message || 'Không thể xoá'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -184,46 +189,45 @@ const ManageProducts = () => {
           <span className="admin-page-count">{products.length} sản phẩm</span>
         </div>
         <div className="flex items-center gap-2">
-        <a href="http://localhost:8080/api/admin/export/products"
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Xuất Excel
-        </a>
-        <button onClick={openCreate} className="admin-btn-primary">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Thêm sản phẩm
-        </button>
-      </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-3.5">
-        <div className="flex items-center gap-2">
-          {(['all', 'platform', 'seller', 'pending'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)}
-              className={filter === f ? 'admin-filter-active' : 'admin-filter-inactive'}>
-              {f === 'all' ? 'Tất cả' : f === 'platform' ? 'Sản phẩm sàn' : f === 'seller' ? 'Sản phẩm seller' : 'Chờ duyệt'}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 max-w-xs w-full">
-          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Tìm kiếm sản phẩm..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
-          />
+          <a href="http://localhost:8080/api/admin/export/products"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Xuất Excel
+          </a>
+          <button onClick={openCreate} className="admin-btn-primary">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Thêm sản phẩm
+          </button>
         </div>
       </div>
 
-      <div className="admin-card">
+      <div className="admin-card p-4">
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <div className="flex items-center gap-1">
+            {(['all', 'platform', 'seller', 'pending'] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                className={filter === f ? 'admin-filter-active' : 'admin-filter-inactive'}>
+                {f === 'all' ? 'Tất cả' : f === 'platform' ? 'Sản phẩm sàn' : f === 'seller' ? 'Sản phẩm seller' : 'Chờ duyệt'}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 max-w-[200px] w-full">
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Tìm kiếm..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+            />
+          </div>
+        </div>
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
@@ -231,10 +235,9 @@ const ManageProducts = () => {
                 <th>Sản phẩm</th>
                 <th className="text-right">Giá gốc</th>
                 <th className="text-right">Giá bán</th>
-                <th className="text-center">Đánh giá</th>
                 <th className="text-center">Đã bán</th>
                 <th className="text-center">Loại</th>
-                <th className="text-right">Thao tác</th>
+                <th className="text-right pr-5">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -259,11 +262,6 @@ const ManageProducts = () => {
                   <td className="text-right font-semibold text-gray-900">
                     {product.price?.toLocaleString('vi-VN')}đ
                   </td>
-                  <td className="text-center">
-                    <span className="admin-tag">
-                      ★ {product.rating || 0}
-                    </span>
-                  </td>
                   <td className="text-center text-sm font-medium">{product.sold || 0}</td>
                   <td className="text-center">
                     {!product.approved ? (
@@ -274,7 +272,7 @@ const ManageProducts = () => {
                       <span className="admin-badge-info"><span className="admin-badge-dot" />Sàn</span>
                     )}
                   </td>
-                  <td className="text-right">
+                  <td className="text-right pr-5">
                     <div className="flex items-center justify-end gap-1">
                       {!product.approved && (
                         <button onClick={() => handleApprove(product.id)}
@@ -289,7 +287,7 @@ const ManageProducts = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button onClick={() => handleDelete(product.id)} className="admin-btn-icon text-gray-400 hover:text-red-600 hover:bg-red-50">
+                      <button onClick={() => setDeleteTarget(product)} className="admin-btn-icon text-gray-400 hover:text-red-600 hover:bg-red-50">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -300,7 +298,7 @@ const ManageProducts = () => {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={6}>
                     <div className="admin-empty">
                       <svg className="admin-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -315,6 +313,37 @@ const ManageProducts = () => {
           </table>
         </div>
       </div>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Xoá sản phẩm</h3>
+                <p className="text-sm text-gray-500">Hành động này không thể hoàn tác.</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-700 mb-6">
+              Bạn có chắc muốn xoá <strong className="text-gray-900">{deleteTarget.name}</strong>?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setDeleteTarget(null)} disabled={saving}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50">
+                Huỷ
+              </button>
+              <button onClick={handleDelete} disabled={saving}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
+                {saving ? 'Đang xoá...' : 'Xoá'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalOpen && (
         <div className="admin-modal-overlay">

@@ -25,6 +25,8 @@ const PaymentSuccess = () => {
                 .then(res => res.json())
                 .then(data => {
                     console.log("Cập nhật đơn hàng thành công: ", data);
+                    localStorage.setItem('order_update', Date.now().toString());
+                    window.dispatchEvent(new CustomEvent('order-update'));
                 })
                 .catch(err => {
                     console.error("Lỗi khi cập nhật trạng thái đơn:", err);
