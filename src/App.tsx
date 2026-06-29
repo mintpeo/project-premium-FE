@@ -2,7 +2,9 @@ import './index.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from "./pages/Home/Home";
 import Auth from "./pages/Auth";
-import OAuth from "./pages/OAuthSuccess";
+import OAuthSuccess from "./pages/OAuthSuccess";
+import FacebookCallback from "./pages/FacebookCallback";
+
 import ResetPassword from "./pages/Profile/ResetPassword";
 import Profile from "./pages/Profile/Profile";
 import ProductDetail from "./pages/ProductDetail/ProductDetail";
@@ -25,16 +27,20 @@ import ManageOrders from "./pages/AdminPages/ManageOrders";
 import ManageCategories from "./pages/AdminPages/ManageCategories";
 import ManageSellers from "./pages/AdminPages/ManageSellers";
 import ApprovePayments from "./pages/AdminPages/ApprovePayments";
+import ApproveWithdrawals from "./pages/AdminPages/ApproveWithdrawals";
+import ManageRevenue from "./pages/AdminPages/ManageRevenue";
 import ManageReviews from "./pages/AdminPages/ManageReviews";
 import ManageComments from "./pages/AdminPages/ManageComments";
 import ManageCoupons from "./pages/AdminPages/ManageCoupons";
 import ManageProductKeys from "./pages/AdminPages/ManageProductKeys";
 import ManageRefunds from "./pages/AdminPages/ManageRefunds";
+import AdminSettings from "./pages/AdminPages/AdminSettings";
 import MyProducts from "./pages/SellerPages/MyProducts";
 import PersonalRevenue from "./pages/SellerPages/PersonalRevenue";
 import ProcessOrders from "./pages/SellerPages/ProcessOrders";
 import SellerCoupons from "./pages/SellerPages/SellerCoupons";
 import SellerComments from "./pages/SellerPages/SellerComments";
+import SellerLoyalty from "./pages/SellerPages/SellerLoyalty";
 import PaymentSuccess from "./pages/Profile/PaymentSuccess";
 import PaymentCancel from "./pages/Profile/PaymentCancel";
 
@@ -46,7 +52,8 @@ function App() {
         {/* Retail Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/oauth-google" element={<OAuth />} />
+        <Route path="/oauth-callback" element={<OAuthSuccess />} />
+        <Route path="/facebook-callback" element={<FacebookCallback />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
@@ -82,6 +89,9 @@ function App() {
               <Route path="/admin/coupons" element={<ManageCoupons />} />
               <Route path="/admin/keys" element={<ManageProductKeys />} />
               <Route path="/admin/refunds" element={<ManageRefunds />} />
+              <Route path="/admin/revenue" element={<ManageRevenue />} />
+              <Route path="/admin/withdrawals" element={<ApproveWithdrawals />} />
+              <Route path="/admin/settings" element={<AdminSettings />} />
             </Route>
 
             {/* Seller Routes */}
@@ -92,6 +102,7 @@ function App() {
               <Route path="/seller/orders" element={<ProcessOrders />} />
               <Route path="/seller/coupons" element={<SellerCoupons />} />
               <Route path="/seller/reviews" element={<SellerComments />} />
+              <Route path="/seller/loyalty" element={<SellerLoyalty />} />
             </Route>
           </Route>
         </Route>

@@ -186,7 +186,7 @@
   @apply border-b border-gray-100;
 }
 .admin-table thead th {
-  @apply text-left px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider;
+  @apply px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider;
 }
 .admin-table tbody tr {
   @apply border-b border-gray-50 transition-all duration-150;
@@ -198,7 +198,7 @@
   @apply bg-blue-50/30;
 }
 .admin-table tbody td {
-  @apply px-4 py-3.5 text-sm text-gray-700;
+  @apply px-3 py-3 text-sm text-gray-700;
 }
 
 .admin-badge {

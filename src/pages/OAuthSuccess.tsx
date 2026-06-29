@@ -1,15 +1,15 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {useAuth} from "../context/AuthContext.tsx";
+import { useAuth } from "../context/AuthContext";
 
 const OAuthSuccess = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-        const loadGoogleUser = async () => {
+        const loadOAuthUser = async () => {
             try {
-                const res = await fetch("http://localhost:8080/api/auth/google", {
+                const res = await fetch("http://localhost:8080/api/auth/oauth/callback", {
                     credentials: "include",
                 });
 
@@ -23,11 +23,11 @@ const OAuthSuccess = () => {
                     else navigate('/');
                 }
             } catch (e) {
-                console.error("Error: Info User Google", e);
+                console.error("Error: Info User OAuth", e);
             }
         };
 
-        loadGoogleUser();
+        loadOAuthUser();
     }, [navigate]);
 
     return <p>Logging in...</p>;

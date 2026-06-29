@@ -199,6 +199,8 @@ const Profile = () => {
                     handleFetchOrders(orderStatus as 'PENDING' | 'PROCESSING' | 'SUCCESS');
                 }
                 fetchOrderCounts();
+                localStorage.setItem('order_update', Date.now().toString());
+                window.dispatchEvent(new CustomEvent('order-update'));
             } else {
                 alert("Lỗi: " + (data.error || "Không thể huỷ đơn hàng"));
             }

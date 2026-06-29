@@ -38,8 +38,7 @@ const DashboardHeader = () => {
             <ChevronDown size={14} className="text-gray-400" />
           </label>
           <ul tabIndex={0} className="mt-2 z-[1] p-1.5 shadow-lg dropdown-content bg-base-100 rounded-xl w-52 border border-base-200">
-            <li><Link to="/profile" className="block px-4 py-2 text-sm hover:bg-base-200 rounded-lg transition-colors">Trang cá nhân</Link></li>
-            <li><Link to="/profile" className="block px-4 py-2 text-sm hover:bg-base-200 rounded-lg transition-colors">Cài đặt</Link></li>
+            <li><Link to="/admin/settings" className="block px-4 py-2 text-sm hover:bg-base-200 rounded-lg transition-colors">Cài đặt</Link></li>
             <li className="border-t border-base-200 mt-1 pt-1">
               <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-error/5 rounded-lg transition-colors w-full">
                 <LogOut size={14} />

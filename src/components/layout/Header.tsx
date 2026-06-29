@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef, useCallback} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import CartSidebar from './CartSidebar';
 import {useAuth} from '../../context/AuthContext';
@@ -19,17 +19,12 @@ const Header = () => {
     const tailwindSafelist = "text-[#FF0000] text-[#00A4EF] text-[#1DB954] text-[#00C4CC] text-red-500 text-blue-500 text-green-500";
 
     const [searchText, setSearchText] = useState('');
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const userMenuRef = useRef<HTMLDivElement>(null);
 
     const handleLogout = () => {
         logout();
         navigate('/');
-    };
-
-    const getDashboardLink = () => {
-        if (!user) return '/auth';
-        if (user.role === 'ADMIN') return '/admin/dashboard';
-        if (user.role === 'SELLER') return '/seller/dashboard';
-        return '/profile';
     };
 
     const handleSearch = (e: React.FormEvent) => {
@@ -41,12 +36,29 @@ const Header = () => {
     };
 
     useEffect(() => {
-        // Gọi API lấy danh sách danh mục
+        const handleClickOutside = (e: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+                setShowUserMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const fetchCategoriesAPI = useCallback(() => {
         fetch('http://localhost:8080/api/categories')
             .then((res) => res.json())
             .then((data) => setCategories(data))
             .catch((err) => console.error("Lỗi lấy categories:", err));
     }, []);
+
+    useEffect(() => {
+        fetchCategoriesAPI();
+        const onCategoryUpdate = () => fetchCategoriesAPI();
+        window.addEventListener('category-update', onCategoryUpdate);
+        window.addEventListener('storage', (e) => { if (e.key === 'category_update') fetchCategoriesAPI(); });
+        return () => window.removeEventListener('category-update', onCategoryUpdate);
+    }, [fetchCategoriesAPI]);
 
     return (
         <header className="bg-[#1e2a4a] border-b border-blue-900/30 sticky top-0 z-50">
@@ -83,9 +95,9 @@ const Header = () => {
                 {/* Login & Cart */}
                 <div className="flex items-center gap-3">
                     {isLoggedIn ? (
-                        <div className="flex items-center gap-2">
-                            <Link
-                                to={getDashboardLink()}
+                        <div className="relative" ref={userMenuRef}>
+                            <button
+                                onClick={() => setShowUserMenu(!showUserMenu)}
                                 className="px-4 py-2.5 rounded-full border-2 border-blue-400 text-white flex items-center gap-2 bg-[#1e2a4a] hover:bg-[#2a3859] transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
                             >
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -93,7 +105,29 @@ const Header = () => {
                                           clipRule="evenodd"/>
                                 </svg>
                                 <span className="max-w-[120px] truncate text-sm">{user?.fullName || user?.email}</span>
-                            </Link>
+                                <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            {showUserMenu && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                                    <Link to="/profile" onClick={() => setShowUserMenu(false)}
+                                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        Xem thông tin
+                                    </Link>
+                                    <hr className="my-1 border-gray-100" />
+                                    <button onClick={() => { handleLogout(); setShowUserMenu(false); }}
+                                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                        Đăng xuất
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <Link to="/auth"

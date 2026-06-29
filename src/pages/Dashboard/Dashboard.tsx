@@ -34,13 +34,14 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [revenueData, setRevenueData] = useState<{ date: string; revenue: number }[]>([]);
+  const [userRoleCounts, setUserRoleCounts] = useState({ ADMIN: 0, SELLER: 0, CUSTOMER: 0 });
   const [revenuePeriod, setRevenuePeriod] = useState('30d');
   const [revenueLoading, setRevenueLoading] = useState(false);
   const [categoryRevenue, setCategoryRevenue] = useState<{ name: string; revenue: number }[]>([]);
   const [returningStats, setReturningStats] = useState<any>(null);
   const [bestSellingTypes, setBestSellingTypes] = useState<{ name: string; revenue: number; sold: number }[]>([]);
 
-  useEffect(() => {
+  const fetchDashboard = useCallback(() => {
     fetch('http://localhost:8080/api/admin/dashboard')
       .then(res => res.json())
       .then(data => {
@@ -69,7 +70,31 @@ const Dashboard = () => {
         if (Array.isArray(data)) setBestSellingTypes(data);
       })
       .catch(err => console.error('Lỗi tải loại SP bán chạy:', err));
+
+    fetch('http://localhost:8080/api/admin/users')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const counts = { ADMIN: 0, SELLER: 0, CUSTOMER: 0 };
+          data.forEach((u: any) => { if (counts[u.role] !== undefined) counts[u.role]++; });
+          setUserRoleCounts(counts);
+        }
+      })
+      .catch(err => console.error('Lỗi tải users:', err));
   }, []);
+
+  useEffect(() => {
+    fetchDashboard();
+    const onVisible = () => { if (!document.hidden) fetchDashboard(); };
+    const onOrderUpdate = () => fetchDashboard();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('order-update', onOrderUpdate);
+    window.addEventListener('storage', (e) => { if (e.key === 'order_update') fetchDashboard(); });
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('order-update', onOrderUpdate);
+    };
+  }, [fetchDashboard]);
 
   const fetchRevenue = useCallback(async (period: string) => {
     setRevenueLoading(true);
@@ -195,6 +220,13 @@ const Dashboard = () => {
               <div>
                 <p className="admin-stat-label">{s.label}</p>
                 <p className="admin-stat-value">{s.value}</p>
+                {i === 0 && (
+                  <div className="flex gap-2 mt-1 text-[11px] text-gray-500">
+                    <span>Admin: {userRoleCounts.ADMIN}</span>
+                    <span>Seller: {userRoleCounts.SELLER}</span>
+                    <span>User: {userRoleCounts.CUSTOMER}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -215,7 +247,8 @@ const Dashboard = () => {
                   <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} tick={{ fill: '#9ca3af' }} />
                   <YAxis axisLine={false} tickLine={false} fontSize={12} tick={{ fill: '#9ca3af' }} />
                   <Tooltip cursor={{ fill: 'transparent' }}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '13px' }} />
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '13px' }}
+                    labelStyle={{ color: '#3b82f6', fontWeight: 600 }} />
                   <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={44} />
                 </BarChart>
               </ResponsiveContainer>

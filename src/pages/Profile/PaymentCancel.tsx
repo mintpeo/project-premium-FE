@@ -21,6 +21,8 @@ const PaymentCancel = () => {
                 .then(res => res.json())
                 .then(data => {
                     console.log("Đã tự động cập nhật huỷ đơn hàng: ", data);
+                    localStorage.setItem('order_update', Date.now().toString());
+                    window.dispatchEvent(new CustomEvent('order-update'));
                 })
                 .catch(err => {
                     console.error("Lỗi khi huỷ đơn:", err);

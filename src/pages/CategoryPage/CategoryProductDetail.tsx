@@ -16,7 +16,7 @@ const CategoryProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`http://localhost:8080/api/category/${category}/${productId}`);
+        const res = await fetch(`http://localhost:8080/api/product/${productId}`);
         const data = await res.json();
         setProduct(data);
       } catch (error) {
