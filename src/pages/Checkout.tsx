@@ -46,6 +46,15 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState('bank');
   const [note, setNote] = useState("");
 
+  const [userPoints, setUserPoints] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointsToUse, setPointsToUse] = useState(0);
+
+  const totalAmount = mockCartItems.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
+  const maxPoints = Math.min(userPoints, totalAmount);
+  const discount = usePoints ? pointsToUse : 0;
+  const finalAmount = totalAmount - discount;
+
   // check out
   const checkOut = async () => {
     const items = mockCartItems.map(item => ({
@@ -64,7 +73,8 @@ const Checkout = () => {
         "paymentStatus": "PENDING",
         "orderStatus": "PROCESSING",
         "note": note,
-        "totalPrice": totalAmount
+        "totalPrice": finalAmount,
+        "pointsUsed": usePoints ? pointsToUse : 0
       },
       "items": items
     }
@@ -122,9 +132,11 @@ const Checkout = () => {
     }
 
     getYourCart();
+    fetch(`http://localhost:8080/api/user/points/${user.id}`)
+      .then(r => r.ok && r.json())
+      .then(d => d && setUserPoints(d.points))
+      .catch(() => {});
   }, []);
-
-  const totalAmount = mockCartItems.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
 
   if (isLoading) return (<div>Loading Mock Cart Item...</div>)
 
@@ -253,12 +265,36 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Giảm giá</span>
-                  <span className="font-medium text-green-600">0đ</span>
+                  <span className="font-medium text-green-600">{discount > 0 ? `-${discount.toLocaleString('vi-VN')}đ` : '0đ'}</span>
                 </div>
+                {userPoints > 0 && (
+                  <div className="border-t border-gray-50 pt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">P</span>
+                        <span className="text-sm font-medium text-gray-700">Điểm thưởng</span>
+                      </div>
+                      <span className="text-sm font-semibold text-amber-600">{userPoints.toLocaleString('vi-VN')} điểm</span>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={usePoints} onChange={e => { setUsePoints(e.target.checked); if (!e.target.checked) setPointsToUse(0); else setPointsToUse(maxPoints); }}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                      <span className="text-xs text-gray-500">Dùng điểm để giảm tiền</span>
+                    </label>
+                    {usePoints && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input type="number" value={pointsToUse} onChange={e => { const v = Math.min(Math.max(0, parseInt(e.target.value) || 0), maxPoints); setPointsToUse(v); }}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" min={0} max={maxPoints} />
+                        <span className="text-xs text-gray-400 shrink-0">điểm (tối đa {maxPoints.toLocaleString('vi-VN')})</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold">
                   <span className="text-gray-800">Tổng cộng</span>
-                  <span className="text-[#ff7f00]">{totalAmount.toLocaleString('vi-VN')}đ</span>
+                  <span className="text-[#ff7f00]">{finalAmount.toLocaleString('vi-VN')}đ</span>
                 </div>
+                <p className="text-xs text-gray-400">Bạn được <strong>{(totalAmount / 1000).toLocaleString('vi-VN')} điểm</strong> cho đơn hàng này</p>
               </div>
 
               <button
