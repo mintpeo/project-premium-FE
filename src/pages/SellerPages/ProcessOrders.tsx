@@ -214,7 +214,8 @@ const ProcessOrders = () => {
       </div>
 
       {activeTab === 'orders' && (
-      <div className="admin-page-header">
+      <div>
+        <div className="admin-page-header">
         <div className="admin-page-title">
           <div className="accent-dot" />
           <h1>Xử lý đơn hàng</h1>
@@ -248,7 +249,7 @@ const ProcessOrders = () => {
             })}
           </div>
         </div>
-      </div>
+        </div>
 
       <div className="admin-card">
         <div className="admin-table-wrap">
@@ -391,7 +392,7 @@ const ProcessOrders = () => {
           </table>
         </div>
       </div>
-      )}
+      </div>)}
 
       {activeTab === 'refunds' && (
         <div className="space-y-6">

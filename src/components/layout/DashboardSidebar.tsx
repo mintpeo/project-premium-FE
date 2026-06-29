@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Package, ShoppingCart, DollarSign, LogOut, FolderTree, UserCheck, Banknote, MessageSquare, MessageCircle, Tags, Key, RotateCcw, Globe, TrendingUp, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, Package, ShoppingCart, DollarSign, LogOut, FolderTree, UserCheck, Banknote, MessageSquare, MessageCircle, Tags, Key, RotateCcw, Globe, TrendingUp, Wallet, Award } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const DashboardSidebar = () => {
@@ -39,6 +39,7 @@ const DashboardSidebar = () => {
     { name: 'Đánh giá', path: '/seller/reviews', icon: <MessageCircle size={20} /> },
     { name: 'Doanh thu', path: '/seller/revenue', icon: <DollarSign size={20} /> },
     { name: 'Đơn hàng', path: '/seller/orders', icon: <ShoppingCart size={20} /> },
+    { name: 'Tích điểm', path: '/seller/loyalty', icon: <Award size={20} /> },
   ];
 
   const links = isAdmin ? adminLinks : sellerLinks;
