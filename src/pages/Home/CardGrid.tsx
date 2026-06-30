@@ -5,12 +5,22 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 
 const CardGrid = () => {
-  // Tạo 16 thẻ hình ảnh chuẩn chữ nhật
-  const cards = Array.from({ length: 16 }).map((_, i) => ({
-    id: i,
-    image: `https://picsum.photos/seed/${i + 20}/800/400`, // Ảnh hình chữ nhật
-    alt: `Image banner ${i + 1}`
-  }));
+    const imageUrls = [
+        "https://res.cloudinary.com/askasmg7/image/upload/f_auto,q_auto/ChatGPT_Image_02_34_54_1_thg_7_2026_og5fw4",
+        "https://res.cloudinary.com/askasmg7/image/upload/v1782848439/ChatGPT_Image_02_36_55_1_thg_7_2026_bm3a8b.png",
+        "https://res.cloudinary.com/askasmg7/image/upload/v1782848439/ChatGPT_Image_02_26_49_1_thg_7_2026_zg8sss.png",
+        "https://res.cloudinary.com/askasmg7/image/upload/v1782848445/ChatGPT_Image_02_29_11_1_thg_7_2026_olpiwm.png",
+        "https://res.cloudinary.com/askasmg7/image/upload/v1782848444/ChatGPT_Image_02_27_47_1_thg_7_2026_wladki.png",
+        "https://res.cloudinary.com/askasmg7/image/upload/v1782848442/ChatGPT_Image_02_32_17_1_thg_7_2026_uq18l2.png",
+        "https://res.cloudinary.com/askasmg7/image/upload/v1782848439/ChatGPT_Image_02_31_17_1_thg_7_2026_spqedx.png",
+        "https://res.cloudinary.com/askasmg7/image/upload/v1782848427/ChatGPT_Image_02_30_18_1_thg_7_2026_pkvjhg.png"
+    ];
+
+    const cards = imageUrls.map((url, i) => ({
+        id: i,
+        image: url, // Lấy url tương ứng từ mảng
+        alt: `Image banner ${i + 1}`
+    }));
 
   return (
     <div className="py-12 mx-[10%] overflow-hidden relative group">
@@ -45,7 +55,7 @@ const CardGrid = () => {
         breakpoints={{
           640: { slidesPerView: 2.5 },
           1024: {
-            slidesPerView: 4, // 1 trung tâm, 2 bên cạnh + 2 nửa = 3 rưỡi / 4. Match yêu cầu 3 card ở giữa và 2 nửa 2 bên.
+            slidesPerView: 4,
             centeredSlides: true
           },
         }}
