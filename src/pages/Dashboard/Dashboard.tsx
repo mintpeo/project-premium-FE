@@ -43,29 +43,29 @@ const Dashboard = () => {
 
   const fetchDashboard = useCallback(() => {
     fetch('http://localhost:8080/api/admin/dashboard')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (data && typeof data === 'object') setStats(data);
+        if (data && typeof data === 'object' && !data.error) setStats(data);
       })
       .catch(err => console.error('Lỗi tải dashboard:', err))
       .finally(() => setLoading(false));
 
     fetch('http://localhost:8080/api/admin/revenue/by-category')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : [])
       .then(data => {
         if (Array.isArray(data)) setCategoryRevenue(data);
       })
       .catch(err => console.error('Lỗi tải doanh thu danh mục:', err));
 
     fetch('http://localhost:8080/api/admin/returning-customer-stats')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (data && typeof data === 'object') setReturningStats(data);
+        if (data && typeof data === 'object' && !data.error) setReturningStats(data);
       })
       .catch(err => console.error('Lỗi tải thống kê khách hàng:', err));
 
     fetch('http://localhost:8080/api/admin/best-selling-types')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : [])
       .then(data => {
         if (Array.isArray(data)) setBestSellingTypes(data);
       })
