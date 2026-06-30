@@ -39,6 +39,7 @@ import PersonalRevenue from "./pages/SellerPages/PersonalRevenue";
 import ProcessOrders from "./pages/SellerPages/ProcessOrders";
 import SellerCoupons from "./pages/SellerPages/SellerCoupons";
 import SellerComments from "./pages/SellerPages/SellerComments";
+import SellerLoyalty from "./pages/SellerPages/SellerLoyalty";
 import PaymentSuccess from "./pages/Profile/PaymentSuccess";
 import PaymentCancel from "./pages/Profile/PaymentCancel";
 
@@ -100,6 +101,7 @@ function App() {
               <Route path="/seller/orders" element={<ProcessOrders />} />
               <Route path="/seller/coupons" element={<SellerCoupons />} />
               <Route path="/seller/reviews" element={<SellerComments />} />
+              <Route path="/seller/loyalty" element={<SellerLoyalty />} />
             </Route>
           </Route>
         </Route>
