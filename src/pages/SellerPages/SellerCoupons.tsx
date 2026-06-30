@@ -147,8 +147,8 @@ const SellerCoupons = () => {
                 {coupons.map(c => (
                   <tr key={c.id}>
                     <td><span className="font-mono font-bold text-blue-600">{c.code}</span></td>
-                    <td>{c.discountType === 'PERCENT' ? '%' : 'VNĐ'}</td>
-                    <td className="font-semibold">{c.discountValue.toLocaleString('vi-VN')}{c.discountType === 'PERCENT' ? '%' : 'đ'}</td>
+                    <td>{c.discountType === 'PERCENT' || c.discountType === 'PERCENTAGE' ? '%' : 'VNĐ'}</td>
+                    <td className="font-semibold">{c.discountValue.toLocaleString('vi-VN')}{(c.discountType === 'PERCENT' || c.discountType === 'PERCENTAGE') ? '%' : 'đ'}</td>
                     <td>{c.minOrderValue ? c.minOrderValue.toLocaleString('vi-VN') + 'đ' : '—'}</td>
                     <td>{c.usedCount} / {c.maxUses || '∞'}</td>
                     <td className="text-sm">{c.expiryDate ? new Date(c.expiryDate).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—'}</td>

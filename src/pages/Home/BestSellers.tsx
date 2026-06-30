@@ -34,7 +34,7 @@ const BestSellers = ({products}) => {
               
               {/* Product Image Box */}
               <div className="w-[110px] h-[110px] rounded-xl overflow-hidden flex-shrink-0 relative">
-                <img src={product.img} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={product.img || '/assets/placeholder.png'} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 {/* Discount Badge */}
                 {calculateDiscountPercentage(product.priceOri, product.price) && (
                   <div className="absolute top-1 left-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">

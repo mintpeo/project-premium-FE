@@ -19,33 +19,17 @@ interface CustomerPoint {
   updatedAt: string;
 }
 
-const USE_MOCK = true;
-
-const MOCK_PROGRAM: LoyaltyProgram = {
-  id: 1,
-  pointRate: 1,
-  pointValue: 100,
-  minOrderValue: 50000,
-  active: true,
-};
-
-const MOCK_CUSTOMERS: CustomerPoint[] = [
-  { id: 1, user: { id: 2, fullName: 'Nguyễn Văn A', email: 'vana@gmail.com' }, points: 1200, totalEarned: 2500, totalRedeemed: 1300, updatedAt: '2026-06-28T10:00:00' },
-  { id: 2, user: { id: 3, fullName: 'Trần Thị B', email: 'thib@gmail.com' }, points: 850, totalEarned: 1500, totalRedeemed: 650, updatedAt: '2026-06-27T15:30:00' },
-  { id: 3, user: { id: 4, fullName: 'Lê Văn C', email: 'vanc@gmail.com' }, points: 3200, totalEarned: 4500, totalRedeemed: 1300, updatedAt: '2026-06-26T09:15:00' },
-];
-
 const SellerLoyalty = () => {
   const { user } = useAuth();
-  const [program, setProgram] = useState<LoyaltyProgram>(USE_MOCK ? MOCK_PROGRAM : { id: 0, pointRate: 1, pointValue: 100, minOrderValue: 0, active: true });
-  const [customers, setCustomers] = useState<CustomerPoint[]>(USE_MOCK ? MOCK_CUSTOMERS : []);
-  const [loading, setLoading] = useState(!USE_MOCK);
+  const [program, setProgram] = useState<LoyaltyProgram>({ id: 0, pointRate: 1, pointValue: 100, minOrderValue: 0, active: true });
+  const [customers, setCustomers] = useState<CustomerPoint[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ ...program });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!USE_MOCK && user) fetchData();
+    if (user) fetchData();
   }, [user]);
 
   const fetchData = async () => {
@@ -62,11 +46,6 @@ const SellerLoyalty = () => {
   };
 
   const handleSave = async () => {
-    if (USE_MOCK) {
-      setProgram({ ...editForm });
-      setEditing(false);
-      return;
-    }
     if (!user) return;
     setSaving(true);
     try {

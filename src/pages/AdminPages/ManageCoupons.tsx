@@ -154,7 +154,7 @@ const ManageCoupons = () => {
                   <td><span className="font-mono font-bold text-blue-600">{c.code}</span></td>
                   <td>
                     <span className="font-semibold text-gray-900">
-                      {c.discountType === 'PERCENT' ? `${c.discountValue}%` : `${c.discountValue.toLocaleString('vi-VN')}đ`}
+                      {(c.discountType === 'PERCENT' || c.discountType === 'PERCENTAGE') ? `${c.discountValue}%` : `${c.discountValue.toLocaleString('vi-VN')}đ`}
                     </span>
                   </td>
                   <td className="text-gray-500">{c.minOrderValue ? `${c.minOrderValue.toLocaleString('vi-VN')}đ` : '—'}</td>
@@ -260,7 +260,7 @@ const ManageCoupons = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Giá trị</label>
                     <input type="number" value={form.discountValue} onChange={e => setForm({ ...form, discountValue: e.target.value })} required
-                      className="admin-input" placeholder={form.discountType === 'PERCENT' ? '10' : '50000'} />
+                      className="admin-input" placeholder={form.discountType === 'PERCENT' || form.discountType === 'PERCENTAGE' ? '10' : '50000'} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

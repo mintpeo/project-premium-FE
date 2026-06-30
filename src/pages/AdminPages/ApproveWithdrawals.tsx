@@ -15,29 +15,21 @@ interface CommissionRecord {
   admin?: { fullName: string; email: string };
 }
 
-const USE_MOCK = true;
-
-const MOCK_SELLERS: SellerWithBalance[] = [
-  { id: 6, fullName: 'Nguyễn Phùng An', email: 'phungana11@gmail.com', phoneNumber: '000292323', sellerVerified: true, pendingAmount: 2500000, availableAmount: 506900, totalEarned: 506900 },
-];
-const MOCK_COMMISSION_HISTORY: CommissionRecord[] = [];
-
 const ApproveWithdrawals = () => {
   const { user } = useAuth();
-  const [sellers, setSellers] = useState<SellerWithBalance[]>(USE_MOCK ? MOCK_SELLERS : []);
-  const [history, setHistory] = useState<CommissionRecord[]>(USE_MOCK ? MOCK_COMMISSION_HISTORY : []);
-  const [loading, setLoading] = useState(!USE_MOCK);
+  const [sellers, setSellers] = useState<SellerWithBalance[]>([]);
+  const [history, setHistory] = useState<CommissionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [payModal, setPayModal] = useState<SellerWithBalance | null>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payNote, setPayNote] = useState('');
   const [paying, setPaying] = useState(false);
 
-  const totalRevenue = USE_MOCK ? 10000000 : 0;
-  const totalPaid = history.reduce((sum, r) => sum + r.amount, 0);
+  const totalRevenue = sellers.reduce((sum, s) => sum + s.totalEarned, 0);
+  const totalPaid = sellers.reduce((sum, s) => sum + (s.totalEarned - s.availableAmount - s.pendingAmount), 0);
   const remainingRevenue = totalRevenue - totalPaid;
 
   const fetchData = async () => {
-    if (USE_MOCK) return;
     setLoading(true);
     try {
       const res = await fetch('http://localhost:8080/api/admin/sellers-with-balance');
@@ -45,9 +37,16 @@ const ApproveWithdrawals = () => {
     } catch {} finally { setLoading(false); }
   };
 
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/admin/withdraw-requests?status=APPROVED');
+      if (res.ok) setHistory(await res.json());
+    } catch {}
+  };
+
   useEffect(() => {
-    if (USE_MOCK) return;
     fetchData();
+    fetchHistory();
   }, []);
 
   const handlePay = async () => {
@@ -57,27 +56,6 @@ const ApproveWithdrawals = () => {
     if (amount > payModal.totalEarned) { alert('Số tiền vượt quá thu nhập của seller'); return; }
     if (amount > remainingRevenue) { alert('Số dư khả dụng không đủ'); return; }
     setPaying(true);
-    if (USE_MOCK) {
-      await new Promise(r => setTimeout(r, 500));
-      const newEntry: CommissionRecord = {
-        id: Date.now(),
-        seller: { id: payModal.id, fullName: payModal.fullName, email: payModal.email },
-        amount, note: payNote,
-        createdAt: new Date().toISOString(),
-        admin: { fullName: user?.fullName || 'Admin', email: user?.email || '' },
-      };
-      setHistory(prev => [newEntry, ...prev]);
-      const updated = sellers.map(s => s.id === payModal.id ? { ...s, availableAmount: s.availableAmount + amount } : s);
-      setSellers(updated);
-      const stored = localStorage.getItem('seller_balance');
-      const existing = stored ? JSON.parse(stored) : { availableAmount: 506900, totalEarned: 506900 };
-      localStorage.setItem('seller_balance', JSON.stringify({ ...existing, availableAmount: existing.availableAmount + amount }));
-      localStorage.setItem('commission_history', JSON.stringify([newEntry, ...history]));
-      window.dispatchEvent(new CustomEvent('balance-update'));
-      setPayModal(null); setPayAmount(''); setPayNote('');
-      setPaying(false);
-      return;
-    }
     try {
       const res = await fetch('http://localhost:8080/api/admin/pay-commission', {
         method: 'POST',
@@ -87,6 +65,7 @@ const ApproveWithdrawals = () => {
       if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
       setPayModal(null); setPayAmount(''); setPayNote('');
       await fetchData();
+      await fetchHistory();
     } catch (err: any) { alert('Lỗi: ' + err.message); }
     finally { setPaying(false); }
   };
