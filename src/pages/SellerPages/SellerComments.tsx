@@ -15,6 +15,7 @@ interface Review {
   createdAt: string;
   isRead: boolean;
   shopReply?: string;
+  categoryIds?: number[];
 }
 
 interface Comment {
@@ -29,6 +30,7 @@ interface Comment {
   createdAt: string;
   isRead: boolean;
   replies?: Comment[];
+  categoryIds?: number[];
 }
 
 interface Product {
@@ -48,6 +50,8 @@ const SellerComments = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'HIDDEN'>('ALL');
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('ALL');
 
   // Modal State
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
@@ -58,6 +62,19 @@ const SellerComments = () => {
   
   // Expanded State
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+
+  const fetchFilters = async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/admin/categories');
+      if (res.ok) setCategories(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchFilters();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -156,6 +173,28 @@ const SellerComments = () => {
     });
   };
 
+  const handleOpenDetail = async (pid: number) => {
+    setSelectedProductId(pid);
+    const hasUnread = activeTab === 'reviews' 
+      ? groupedReviews[pid]?.some((i: any) => !i.isRead) 
+      : groupedCommentsRaw[pid]?.some((i: any) => !i.isRead);
+
+    if (hasUnread) {
+      try {
+        const type = activeTab === 'reviews' ? 'reviews' : 'comments';
+        await fetch(`http://localhost:8080/api/seller/${type}/read/${pid}`, { method: 'PUT' });
+        
+        if (activeTab === 'reviews') {
+          setReviews(prev => prev.map(r => r.productId === pid ? { ...r, isRead: true } : r));
+        } else {
+          setComments(prev => prev.map(c => c.productId === pid ? { ...c, isRead: true } : c));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   const countComments = (nodes: Comment[]): number => {
     return nodes.reduce((acc, node) => acc + 1 + countComments(node.replies || []), 0);
   };
@@ -166,7 +205,8 @@ const SellerComments = () => {
     const matchSearch = p?.name?.toLowerCase().includes(search.toLowerCase()) || 
                         r.content.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'ALL' || r.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchCategory = selectedCategoryId === 'ALL' || r.categoryIds?.includes(Number(selectedCategoryId));
+    return matchSearch && matchStatus && matchCategory;
   });
 
   const filteredCommentsList = comments.filter(c => {
@@ -174,7 +214,8 @@ const SellerComments = () => {
     const matchSearch = p?.name?.toLowerCase().includes(search.toLowerCase()) || 
                         c.content.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'ALL' || c.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchCategory = selectedCategoryId === 'ALL' || c.categoryIds?.includes(Number(selectedCategoryId));
+    return matchSearch && matchStatus && matchCategory;
   });
 
   // 2. Group the filtered data
@@ -393,28 +434,37 @@ const SellerComments = () => {
       </div>
 
       <div className="admin-card p-4">
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <select 
-              value={statusFilter} 
-              onChange={e => setStatusFilter(e.target.value as any)}
-              className="admin-input py-2 text-sm w-auto cursor-pointer"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="PENDING">Chưa duyệt</option>
-              <option value="APPROVED">Đã duyệt</option>
-              <option value="HIDDEN">Đã ẩn</option>
-            </select>
-          </div>
+        <div className="flex items-center gap-3 mb-4 w-full">
+          <select 
+            value={statusFilter} 
+            onChange={e => setStatusFilter(e.target.value as any)}
+            className="admin-input py-2 px-2 text-sm cursor-pointer border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white !w-[140px] truncate"
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="PENDING">Chưa duyệt</option>
+            <option value="APPROVED">Đã duyệt</option>
+            <option value="HIDDEN">Đã ẩn</option>
+          </select>
+
+          <select 
+            value={selectedCategoryId} 
+            onChange={e => setSelectedCategoryId(e.target.value)}
+            className="admin-input py-2 px-2 text-sm cursor-pointer border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white !w-[140px] truncate"
+          >
+            <option value="ALL">Tất cả danh mục</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
           
-          <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 max-w-[300px] w-full">
+          <div className="flex items-center gap-2 bg-gray-100/80 hover:bg-gray-100 transition-colors rounded-lg px-3 py-2 flex-1 border border-transparent focus-within:border-gray-200 focus-within:bg-white">
             <Search className="w-4 h-4 text-gray-400 shrink-0" />
             <input
               type="text"
-              placeholder="Tìm tên sản phẩm, nội dung..."
+              placeholder="Tìm tên sản phẩm, nội dung đánh giá..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-500 outline-none w-full"
             />
           </div>
         </div>
@@ -449,7 +499,7 @@ const SellerComments = () => {
                   const hasUnread = items.some((i: any) => !i.isRead);
 
                   return (
-                    <tr key={pid} className="cursor-pointer hover:bg-gray-50" onClick={() => setSelectedProductId(pid)}>
+                    <tr key={pid} className="cursor-pointer hover:bg-gray-50" onClick={() => handleOpenDetail(pid)}>
                       <td>
                         <div className="flex items-center gap-3">
                           <div className="relative">

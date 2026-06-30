@@ -14,6 +14,8 @@ interface Review {
   createdAt: string;
   isRead: boolean;
   shopReply?: string;
+  sellerId?: number;
+  categoryIds?: number[];
 }
 
 interface Comment {
@@ -28,6 +30,8 @@ interface Comment {
   createdAt: string;
   isRead: boolean;
   replies?: Comment[];
+  sellerId?: number;
+  categoryIds?: number[];
 }
 
 const ManageInteractions = () => {
@@ -40,6 +44,10 @@ const ManageInteractions = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'HIDDEN'>('ALL');
+  const [categories, setCategories] = useState<any[]>([]);
+  const [sellers, setSellers] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('ALL');
+  const [selectedSellerId, setSelectedSellerId] = useState<string>('ALL');
 
   // Modal State
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
@@ -50,6 +58,23 @@ const ManageInteractions = () => {
   
   // Expanded State for Reviews (to show shop replies) and Comments (to show sub-comments)
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+
+  const fetchFilters = async () => {
+    try {
+      const [catRes, selRes] = await Promise.all([
+        fetch('http://localhost:8080/api/admin/categories'),
+        fetch('http://localhost:8080/api/admin/sellers')
+      ]);
+      if (catRes.ok) setCategories(await catRes.json());
+      if (selRes.ok) setSellers(await selRes.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchFilters();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'reviews') {
@@ -147,6 +172,28 @@ const ManageInteractions = () => {
     });
   };
 
+  const handleOpenDetail = async (pid: number) => {
+    setSelectedProductId(pid);
+    const hasUnread = activeTab === 'reviews' 
+      ? groupedReviews[pid]?.some((i: any) => !i.isRead) 
+      : groupedCommentsRaw[pid]?.some((i: any) => !i.isRead);
+
+    if (hasUnread) {
+      try {
+        const type = activeTab === 'reviews' ? 'reviews' : 'comments';
+        await fetch(`http://localhost:8080/api/admin/${type}/read/${pid}`, { method: 'PUT' });
+        
+        if (activeTab === 'reviews') {
+          setReviews(prev => prev.map(r => r.productId === pid ? { ...r, isRead: true } : r));
+        } else {
+          setComments(prev => prev.map(c => c.productId === pid ? { ...c, isRead: true } : c));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   const countComments = (nodes: Comment[]): number => {
     return nodes.reduce((acc, node) => acc + 1 + countComments(node.replies || []), 0);
   };
@@ -156,14 +203,18 @@ const ManageInteractions = () => {
     const matchSearch = r.productName?.toLowerCase().includes(search.toLowerCase()) || 
                         r.content.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'ALL' || r.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchCategory = selectedCategoryId === 'ALL' || r.categoryIds?.includes(Number(selectedCategoryId));
+    const matchSeller = selectedSellerId === 'ALL' || r.sellerId === Number(selectedSellerId);
+    return matchSearch && matchStatus && matchCategory && matchSeller;
   });
 
   const filteredCommentsList = comments.filter(c => {
     const matchSearch = c.productName?.toLowerCase().includes(search.toLowerCase()) || 
                         c.content.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'ALL' || c.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchCategory = selectedCategoryId === 'ALL' || c.categoryIds?.includes(Number(selectedCategoryId));
+    const matchSeller = selectedSellerId === 'ALL' || c.sellerId === Number(selectedSellerId);
+    return matchSearch && matchStatus && matchCategory && matchSeller;
   });
 
   // 2. Group the filtered data by Product
@@ -267,7 +318,10 @@ const ManageInteractions = () => {
             {review.user?.email?.charAt(0).toUpperCase() || '?'}
           </div>
           <div>
-            <p className="font-semibold text-sm text-gray-900">{review.user?.fullName || review.user?.email}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-sm text-gray-900">{review.user?.fullName || review.user?.email}</p>
+              {!review.isRead && <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Mới</span>}
+            </div>
             <div className="text-yellow-500 text-xs mb-1">{renderStars(review.stars || 5)}</div>
             <p className="text-sm text-gray-700 mt-1">{review.content}</p>
             <p className="text-xs text-gray-400 mt-1">{new Date(review.createdAt).toLocaleString('vi-VN')}</p>
@@ -332,7 +386,8 @@ const ManageInteractions = () => {
           <div>
             <div className="flex items-center gap-2">
               <p className="font-semibold text-sm text-gray-900">{comment.user?.fullName || comment.user?.email}</p>
-              {level > 0 && <span className="bg-gray-100 text-gray-500 text-[10px] px-1.5 py-0.5 rounded">Phản hồi</span>}
+              {!comment.isRead && <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Mới</span>}
+              {level > 0 && <span className="bg-gray-100 text-gray-500 text-[9px] px-1.5 py-0.5 rounded font-bold">Phản hồi</span>}
             </div>
             <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
             <p className="text-xs text-gray-400 mt-1">{new Date(comment.createdAt).toLocaleString('vi-VN')}</p>
@@ -402,6 +457,9 @@ const ManageInteractions = () => {
           } flex items-center gap-2`}
         >
           <Star size={16} /> Đánh giá sản phẩm
+          {reviews.filter(r => !r.isRead).length > 0 && (
+            <span className="bg-red-500 w-2 h-2 rounded-full absolute top-3 right-3" />
+          )}
         </button>
         <button
           onClick={() => { setActiveTab('comments'); setSearch(''); setSelectedProductId(null); setExpandedItems(new Set()); setReplyingId(null); }}
@@ -410,32 +468,55 @@ const ManageInteractions = () => {
           } flex items-center gap-2`}
         >
           <MessageCircle size={16} /> Bình luận / Hỏi đáp
+          {comments.filter(c => !c.isRead).length > 0 && (
+            <span className="bg-red-500 w-2 h-2 rounded-full absolute top-3 right-3" />
+          )}
         </button>
       </div>
 
       <div className="admin-card p-4">
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <select 
-              value={statusFilter} 
-              onChange={e => setStatusFilter(e.target.value as any)}
-              className="admin-input py-2 text-sm w-auto cursor-pointer"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="PENDING">Chưa duyệt</option>
-              <option value="APPROVED">Đã duyệt</option>
-              <option value="HIDDEN">Đã ẩn</option>
-            </select>
-          </div>
+        <div className="flex items-center gap-3 mb-4 w-full">
+          <select 
+            value={statusFilter} 
+            onChange={e => setStatusFilter(e.target.value as any)}
+            className="admin-input py-2 px-2 text-sm cursor-pointer border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white !w-[140px] truncate"
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="PENDING">Chưa duyệt</option>
+            <option value="APPROVED">Đã duyệt</option>
+            <option value="HIDDEN">Đã ẩn</option>
+          </select>
+
+          <select 
+            value={selectedCategoryId} 
+            onChange={e => setSelectedCategoryId(e.target.value)}
+            className="admin-input py-2 px-2 text-sm cursor-pointer border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white !w-[140px] truncate"
+          >
+            <option value="ALL">Tất cả danh mục</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
           
-          <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 max-w-[300px] w-full">
+          <select 
+            value={selectedSellerId} 
+            onChange={e => setSelectedSellerId(e.target.value)}
+            className="admin-input py-2 px-2 text-sm cursor-pointer border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white !w-[140px] truncate"
+          >
+            <option value="ALL">Tất cả người bán</option>
+            {sellers.map(s => (
+              <option key={s.id} value={s.id}>{s.fullName || s.email}</option>
+            ))}
+          </select>
+          
+          <div className="flex items-center gap-2 bg-gray-100/80 hover:bg-gray-100 transition-colors rounded-lg px-3 py-2 flex-1 border border-transparent focus-within:border-gray-200 focus-within:bg-white">
             <Search className="w-4 h-4 text-gray-400 shrink-0" />
             <input
               type="text"
-              placeholder="Tìm tên sản phẩm, nội dung..."
+              placeholder="Tìm tên sản phẩm, nội dung đánh giá..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-500 outline-none w-full"
             />
           </div>
         </div>
@@ -467,18 +548,22 @@ const ManageInteractions = () => {
                   }
                   
                   const totalCount = activeTab === 'reviews' ? items.length : groupedCommentsRaw[pid].length;
+                  const hasUnread = items.some((i: any) => !i.isRead);
 
                   return (
-                    <tr key={pid} className="cursor-pointer hover:bg-gray-50" onClick={() => setSelectedProductId(pid)}>
+                    <tr key={pid} className="cursor-pointer hover:bg-gray-50" onClick={() => handleOpenDetail(pid)}>
                       <td>
                         <div className="flex items-center gap-3">
-                          {sample?.productImg ? (
-                            <img src={sample.productImg.split(',')[0]} alt={sample.productName} className="w-10 h-10 rounded border border-gray-200 object-cover" />
-                          ) : (
-                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200">
-                              <Package size={20} />
-                            </div>
-                          )}
+                          <div className="relative">
+                            {sample?.productImg ? (
+                              <img src={sample.productImg.split(',')[0]} alt={sample.productName} className="w-10 h-10 rounded border border-gray-200 object-cover" />
+                            ) : (
+                              <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200">
+                                <Package size={20} />
+                              </div>
+                            )}
+                            {hasUnread && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white rounded-full"></span>}
+                          </div>
                           <p className="font-semibold text-gray-900 text-sm">{sample?.productName || `Sản phẩm ID: ${pid}`}</p>
                         </div>
                       </td>
