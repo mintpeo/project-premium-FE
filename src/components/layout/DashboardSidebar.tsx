@@ -35,6 +35,7 @@ const DashboardSidebar = () => {
     { name: 'Dashboard', path: '/seller/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Sản phẩm', path: '/seller/products', icon: <Package size={20} /> },
     { name: 'Mã giảm giá', path: '/seller/coupons', icon: <Tags size={20} /> },
+    { name: 'Kho key', path: '/seller/keys', icon: <Key size={20} /> },
     { name: 'Đánh giá', path: '/seller/reviews', icon: <MessageCircle size={20} /> },
     { name: 'Doanh thu', path: '/seller/revenue', icon: <DollarSign size={20} /> },
     { name: 'Đơn hàng', path: '/seller/orders', icon: <ShoppingCart size={20} /> },
