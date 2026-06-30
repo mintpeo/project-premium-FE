@@ -46,6 +46,39 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState('bank');
   const [note, setNote] = useState("");
 
+  const [userPoints, setUserPoints] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointsToUse, setPointsToUse] = useState(0);
+
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState('');
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+
+  const totalAmount = mockCartItems.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
+  const maxPoints = Math.min(userPoints, totalAmount);
+  const discount = usePoints ? pointsToUse : 0;
+  const finalAmount = totalAmount - discount - couponDiscount;
+
+  const handleSelectCoupon = async (code: string) => {
+    if (appliedCoupon === code) {
+      setAppliedCoupon('');
+      setCouponDiscount(0);
+      return;
+    }
+    try {
+      const res = await fetch('http://localhost:8080/api/coupons/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, totalPrice: totalAmount - discount, userId: user.id })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCouponDiscount(data.discount);
+        setAppliedCoupon(code);
+      }
+    } catch {}
+  };
+
   // check out
   const checkOut = async () => {
     const items = mockCartItems.map(item => ({
@@ -64,7 +97,9 @@ const Checkout = () => {
         "paymentStatus": "PENDING",
         "orderStatus": "PROCESSING",
         "note": note,
-        "totalPrice": totalAmount
+        "totalPrice": finalAmount,
+        "pointsUsed": usePoints ? pointsToUse : 0,
+        "couponCode": appliedCoupon || ''
       },
       "items": items
     }
@@ -122,9 +157,21 @@ const Checkout = () => {
     }
 
     getYourCart();
+    fetch(`http://localhost:8080/api/user/points/${user.id}`)
+      .then(r => r.ok && r.json())
+      .then(d => d && setUserPoints(d.points))
+      .catch(() => {});
   }, []);
 
-  const totalAmount = mockCartItems.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
+  useEffect(() => {
+    if (mockCartItems.length > 0) {
+      const t = mockCartItems.reduce((s, i) => s + i.productPrice * i.quantity, 0);
+      fetch(`http://localhost:8080/api/coupons/available?totalPrice=${t}`)
+        .then(r => r.ok && r.json())
+        .then(d => d && setAvailableCoupons(d))
+        .catch(() => {});
+    }
+  }, [mockCartItems]);
 
   if (isLoading) return (<div>Loading Mock Cart Item...</div>)
 
@@ -251,14 +298,89 @@ const Checkout = () => {
                   <span>Tạm tính</span>
                   <span className="font-medium text-gray-800">{totalAmount.toLocaleString('vi-VN')}đ</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Giảm giá</span>
-                  <span className="font-medium text-green-600">0đ</span>
+
+                <div className="border-t border-gray-50 pt-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold">%</span>
+                    <span className="text-sm font-medium text-gray-700">Mã giảm giá</span>
+                  </div>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                      <span className="text-sm font-medium text-green-700">{appliedCoupon}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-green-600">-{couponDiscount.toLocaleString('vi-VN')}đ</span>
+                        <button onClick={() => { setAppliedCoupon(''); setCouponDiscount(0); }}
+                          className="text-xs text-gray-400 hover:text-red-500 font-medium">Xoá</button>
+                      </div>
+                    </div>
+                  ) : availableCoupons.length > 0 ? (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {availableCoupons.map(c => (
+                        <div key={c.code} onClick={() => handleSelectCoupon(c.code)}
+                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all duration-200 ${c.canUse ? 'bg-white border-gray-200 hover:border-red-300 hover:shadow-sm' : 'bg-gray-50 border-gray-200 opacity-60'}`}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                              {(c.discountType === 'PERCENT' || c.discountType === 'PERCENTAGE') ? `${c.discountValue}%` : `${(c.discountValue/1000).toFixed(0)}K`}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-800">{c.code}</p>
+                              <p className="text-xs text-gray-500">
+                                {(c.discountType === 'PERCENT' || c.discountType === 'PERCENTAGE') ? `Giảm ${c.discountValue}%` : `Giảm ${c.discountValue.toLocaleString('vi-VN')}đ`}
+                                {c.minOrderValue > 0 ? ` - Đơn từ ${c.minOrderValue.toLocaleString('vi-VN')}đ` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          {c.canUse ? (
+                            <span className="text-xs font-medium text-red-500 shrink-0">Chọn</span>
+                          ) : (
+                            <span className="text-xs text-gray-400 shrink-0">Chưa đủ</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">Không có mã giảm giá nào</p>
+                  )}
                 </div>
+
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Giảm điểm</span>
+                  <span className="font-medium text-green-600">{discount > 0 ? `-${discount.toLocaleString('vi-VN')}đ` : '0đ'}</span>
+                </div>
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Giảm mã</span>
+                    <span className="font-medium text-green-600">-{couponDiscount.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                )}
+                {userPoints > 0 && (
+                  <div className="border-t border-gray-50 pt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">P</span>
+                        <span className="text-sm font-medium text-gray-700">Điểm thưởng</span>
+                      </div>
+                      <span className="text-sm font-semibold text-amber-600">{userPoints.toLocaleString('vi-VN')} điểm</span>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={usePoints} onChange={e => { setUsePoints(e.target.checked); if (!e.target.checked) setPointsToUse(0); else setPointsToUse(maxPoints); }}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                      <span className="text-xs text-gray-500">Dùng điểm để giảm tiền</span>
+                    </label>
+                    {usePoints && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input type="number" value={pointsToUse} onChange={e => { const v = Math.min(Math.max(0, parseInt(e.target.value) || 0), maxPoints); setPointsToUse(v); }}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" min={0} max={maxPoints} />
+                        <span className="text-xs text-gray-400 shrink-0">điểm (tối đa {maxPoints.toLocaleString('vi-VN')})</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold">
                   <span className="text-gray-800">Tổng cộng</span>
-                  <span className="text-[#ff7f00]">{totalAmount.toLocaleString('vi-VN')}đ</span>
+                  <span className="text-[#ff7f00]">{finalAmount.toLocaleString('vi-VN')}đ</span>
                 </div>
+                <p className="text-xs text-gray-400">Bạn được <strong>{(finalAmount / 1000).toLocaleString('vi-VN')} điểm</strong> cho đơn hàng này</p>
               </div>
 
               <button

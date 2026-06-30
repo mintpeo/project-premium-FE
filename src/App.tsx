@@ -4,7 +4,6 @@ import Home from "./pages/Home/Home";
 import Auth from "./pages/Auth";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import FacebookCallback from "./pages/FacebookCallback";
-
 import ResetPassword from "./pages/Profile/ResetPassword";
 import Profile from "./pages/Profile/Profile";
 import ProductDetail from "./pages/ProductDetail/ProductDetail";
@@ -29,8 +28,7 @@ import ManageSellers from "./pages/AdminPages/ManageSellers";
 import ApprovePayments from "./pages/AdminPages/ApprovePayments";
 import ApproveWithdrawals from "./pages/AdminPages/ApproveWithdrawals";
 import ManageRevenue from "./pages/AdminPages/ManageRevenue";
-import ManageReviews from "./pages/AdminPages/ManageReviews";
-import ManageComments from "./pages/AdminPages/ManageComments";
+import ManageInteractions from "./pages/AdminPages/ManageInteractions";
 import ManageCoupons from "./pages/AdminPages/ManageCoupons";
 import ManageProductKeys from "./pages/AdminPages/ManageProductKeys";
 import ManageRefunds from "./pages/AdminPages/ManageRefunds";
@@ -85,8 +83,7 @@ function App() {
               <Route path="/admin/categories" element={<ManageCategories />} />
               <Route path="/admin/sellers" element={<ManageSellers />} />
               <Route path="/admin/payments" element={<ApprovePayments />} />
-              <Route path="/admin/reviews" element={<ManageReviews />} />
-              <Route path="/admin/comments" element={<ManageComments />} />
+              <Route path="/admin/interactions" element={<ManageInteractions />} />
               <Route path="/admin/coupons" element={<ManageCoupons />} />
               <Route path="/admin/keys" element={<ManageProductKeys />} />
               <Route path="/admin/refunds" element={<ManageRefunds />} />
