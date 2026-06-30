@@ -63,31 +63,91 @@ const ProcessOrders = () => {
   const [rejectModal, setRejectModal] = useState<{ id: number; sellerId: number } | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
-  useEffect(() => {
-    if (user) fetchOrders();
-    const onVisible = () => { if (!document.hidden) fetchOrders(); };
-    const onOrderUpdate = () => fetchOrders();
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('order-update', onOrderUpdate);
-    window.addEventListener('storage', (e) => { if (e.key === 'order_update') fetchOrders(); });
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('order-update', onOrderUpdate);
+    const [sendKeyAgainModal, setSendKeyAgainModal] = useState(false);
+    const [emailInput, setEmailInput] = useState("admin@gmail.com");
+    const [keyInput, setKeyInput] = useState("");
+    const [emailRejected, setEmailRejected] = useState(false);
+
+    useEffect(() => {
+        if (user) fetchOrders();
+        const onVisible = () => {
+            if (!document.hidden) fetchOrders();
+        };
+        const onOrderUpdate = () => fetchOrders();
+        document.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('order-update', onOrderUpdate);
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'order_update') fetchOrders();
+        });
+        return () => {
+            document.removeEventListener('visibilitychange', onVisible);
+            window.removeEventListener('order-update', onOrderUpdate);
+        };
+    }, [user]);
+
+    useEffect(() => {
+        if (user && activeTab === 'refunds') fetchComplain();
+    }, [user, activeTab]);
+
+    // Show Complain
+    useEffect(() => {
+        fetchComplain();
+    }, [activeTab]);
+
+    const fetchComplain = async () => {
+        if (!user) return;
+        setLoading(true);
+
+        const complainId = {
+            sellerId: user.id
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8080/api/complain/show`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(complainId)
+            });
+            if (!res.ok) throw new Error('Không thể tải đơn hàng');
+            const data = await res.json();
+            setRefunds(Array.isArray(data) ? data : []);
+        } catch {
+            setRefunds([]);
+        } finally {
+            setLoading(false);
+        }
     };
-  }, [user]);
 
-  useEffect(() => {
-    if (user && activeTab === 'refunds') fetchRefunds();
-  }, [user, activeTab]);
+    console.log(refunds);
 
-  const handleFilterClick = (s: string) => {
-    setStatusFilter(s);
-    if (s === 'SUCCESS' || s === 'CANCELLED') {
-      const now = Date.now();
-      setLastSeen(now);
-      localStorage.setItem('seller_orders_last_seen', String(now));
+    const sendMailForUser = async () => {
+        const send = {
+            isRejected: emailRejected,
+            email: emailInput,
+            des: keyInput
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8080/api/complain/sendMailUser`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(send)
+            });
+        } catch (e) {
+            console.log("Error Send Mail For User", e);
+        } finally {
+            setLoading(false);
+        }
     }
-  };
+
+    const handleFilterClick = (s: string) => {
+        setStatusFilter(s);
+        if (s === 'SUCCESS' || s === 'CANCELLED') {
+            const now = Date.now();
+            setLastSeen(now);
+            localStorage.setItem('seller_orders_last_seen', String(now));
+        }
+    };
 
   const fetchOrders = async () => {
     if (!user) return;
@@ -121,29 +181,47 @@ const ProcessOrders = () => {
     }
   };
 
-  const fetchRefunds = async () => {
-    if (!user) return;
-    setRefundsLoading(true);
-    try {
-      const res = await fetch(`http://localhost:8080/api/seller/refunds/${user.id}`);
-      if (res.ok) setRefunds(await res.json());
-    } catch {} finally { setRefundsLoading(false); }
-  };
+    // const fetchRefunds = async () => {
+    //   if (!user) return;
+    //   setRefundsLoading(true);
+    //   try {
+    //     const res = await fetch(`http://localhost:8080/api/seller/refunds/${user.id}`);
+    //     if (res.ok) setRefunds(await res.json());
+    //   } catch {} finally { setRefundsLoading(false); }
+    // };
 
-  const handleProcessRefund = async (id: number, status: string, note?: string) => {
-    if (!user) return;
-    setProcessingRefund(id);
-    try {
-      const res = await fetch(`http://localhost:8080/api/seller/refunds/${id}/process`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, adminNote: note || '', sellerId: user.id }),
-      });
-      if (!res.ok) throw new Error('Xử lý thất bại');
-      await fetchRefunds();
-    } catch (err: any) { alert(err.message); }
-    finally { setProcessingRefund(null); }
-  };
+    const handleProcessRefund = async (id: number, status: string, note?: string) => {
+        if (!user) return;
+        setProcessingRefund(id);
+
+        const change = {
+            "complainId": id,
+            "status": status,
+            "rejected": note
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8080/api/complain/change`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(change)
+            });
+            if (!res.ok) throw new Error('Xử lý thất bại');
+            await fetchComplain();
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setProcessingRefund(null);
+        }
+    };
+
+    useEffect(() => {
+        const changeEmail = () => {
+            const cur = refunds.find(r => r.id === processingRefund);
+            setEmailInput(cur?.email);
+        }
+        changeEmail();
+    }, [processingRefund]);
 
   const statusBadge = (status: string) => {
     switch (status) {
@@ -393,113 +471,222 @@ const ProcessOrders = () => {
         </div>
       </div>
       </div>)}
+        {activeTab === 'refunds' && (
+            <div className="space-y-6">
+                <div className="admin-page-header">
+                    <div className="admin-page-title">
+                        <div className="accent-dot"/>
+                        <h1>Khiếu nại / Trả hàng</h1>
+                        <span className="admin-page-count">{refunds.length} yêu cầu</span>
+                    </div>
+                </div>
+                {refundsLoading ? (
+                    <div className="admin-card p-6">
+                        <div className="flex items-center gap-4">{[...Array(3)].map((_, i) => <div key={i}
+                                                                                                   className="admin-skeleton h-5 w-full"/>)}</div>
+                    </div>
+                ) : refunds.length === 0 ? (
+                    <div className="admin-card">
+                        <div className="admin-empty">
+                            <svg className="admin-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
+                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p className="admin-empty-title">Không có yêu cầu khiếu nại</p>
+                            <p className="admin-empty-desc">Khi có khách hàng khiếu nại hoặc yêu cầu trả hàng, yêu
+                                cầu sẽ hiển thị tại đây</p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="admin-card">
+                        <div className="admin-table-wrap">
+                            <table className="admin-table">
+                                <thead>
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Khách hàng</th>
+                                    <th>Lý do</th>
+                                    <th>Mô tả chi tiết</th>
+                                    <th>Lý do từ chối</th>
+                                    <th className="text-center">Trạng thái</th>
+                                    <th className="text-right">Ngày</th>
+                                    <th className="text-center">Thao tác</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {refunds.sort((a, b) => b.id - a.id).map((r: any) => (
+                                    <tr key={r.id}>
+                                        <td><span
+                                            className="font-mono text-sm font-medium text-blue-600">#PK-{r.orderId}</span>
+                                        </td>
+                                        <td>
+                                            <p className="text-sm font-medium text-gray-900">{r.userName || '—'}</p>
+                                            <p className="text-xs text-gray-400">{r.email}</p>
+                                        </td>
+                                        <td className="max-w-[200px]">
+                                            <p className="text-sm text-gray-700 truncate"
+                                               title={r.reason}>{r.reason}</p>
+                                            {r.adminNote && <p className="text-xs text-gray-400 mt-0.5">Phản
+                                                hồi: {r.adminNote}</p>}
+                                        </td>
+                                        <td className="max-w-[200px]">
+                                            <p className="text-sm text-gray-700 truncate"
+                                               title={r.description}>{r.description}</p>
+                                            {r.adminNote && <p className="text-xs text-gray-400 mt-0.5">Phản
+                                                hồi: {r.adminNote}</p>}
+                                        </td>
+                                        <td className="max-w-[200px]">
+                                            <p className="text-sm text-gray-700 truncate"
+                                               title={r.rejected}>{r.rejected}</p>
+                                            {r.adminNote && <p className="text-xs text-gray-400 mt-0.5">Phản
+                                                hồi: {r.adminNote}</p>}
+                                        </td>
+                                        <td className="text-center">
+                                          <span
+                                              className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${refundStatusBadge(r.status)}`}>
+                                            {refundStatusLabel[r.status] || r.status}
+                                          </span>
+                                        </td>
+                                        <td className="text-right text-gray-500 text-xs">
+                                            {new Date(r.date).toLocaleString('vi-VN', {
+                                                year: 'numeric',
+                                                month: '2-digit',
+                                                day: '2-digit',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </td>
+                                        <td className="text-center">
+                                            {r.status === 'PENDING' ? (
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <button onClick={() => handleProcessRefund(r.id, 'APPROVED')}
+                                                            disabled={processingRefund === r.id}
+                                                            className="px-3 py-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition disabled:opacity-50">
+                                                        {processingRefund === r.id ? '...' : 'Duyệt'}
+                                                    </button>
+                                                    <button onClick={() => {
+                                                        setRejectModal({id: r.id, sellerId: user?.id || 0});
+                                                        setRejectReason('');
+                                                    }}
+                                                            className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                                                        Từ chối
+                                                    </button>
+                                                </div>
+                                            ) : r.status === 'APPROVED' ? (
+                                                <button onClick={() => {
+                                                    setProcessingRefund(r.id);
+                                                    setEmailRejected(false);
+                                                    setSendKeyAgainModal(true);
+                                                }}
+                                                        className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                                                    Gửi Key
+                                                </button>
+                                            ) : (
+                                                <button onClick={() => {
+                                                    setProcessingRefund(r.id);
+                                                    setEmailRejected(true);
+                                                    setSendKeyAgainModal(true);
+                                                }}
+                                                        className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                                                    Gửi Mail Từ Chối
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
+        )}
 
-      {activeTab === 'refunds' && (
-        <div className="space-y-6">
-          <div className="admin-page-header">
-            <div className="admin-page-title">
-              <div className="accent-dot" />
-              <h1>Khiếu nại / Trả hàng</h1>
-              <span className="admin-page-count">{refunds.length} yêu cầu</span>
-            </div>
-          </div>
-          {refundsLoading ? (
-            <div className="admin-card p-6">
-              <div className="flex items-center gap-4">{[...Array(3)].map((_, i) => <div key={i} className="admin-skeleton h-5 w-full" />)}</div>
-            </div>
-          ) : refunds.length === 0 ? (
-            <div className="admin-card">
-              <div className="admin-empty">
-                <svg className="admin-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="admin-empty-title">Không có yêu cầu khiếu nại</p>
-                <p className="admin-empty-desc">Khi có khách hàng khiếu nại hoặc yêu cầu trả hàng, yêu cầu sẽ hiển thị tại đây</p>
-              </div>
-            </div>
-          ) : (
-            <div className="admin-card">
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Mã đơn</th>
-                      <th>Khách hàng</th>
-                      <th>Lý do</th>
-                      <th className="text-center">Trạng thái</th>
-                      <th className="text-right">Ngày</th>
-                      <th className="text-center">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {refunds.map((r: any) => (
-                      <tr key={r.id}>
-                        <td><span className="font-mono text-sm font-medium text-blue-600">#PK-{r.order?.id}</span></td>
-                        <td>
-                          <p className="text-sm font-medium text-gray-900">{r.user?.fullName || '—'}</p>
-                          <p className="text-xs text-gray-400">{r.user?.email}</p>
-                        </td>
-                        <td className="max-w-[200px]">
-                          <p className="text-sm text-gray-700 truncate" title={r.reason}>{r.reason}</p>
-                          {r.adminNote && <p className="text-xs text-gray-400 mt-0.5">Phản hồi: {r.adminNote}</p>}
-                        </td>
-                        <td className="text-center">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${refundStatusBadge(r.status)}`}>
-                            {refundStatusLabel[r.status] || r.status}
-                          </span>
-                        </td>
-                        <td className="text-right text-gray-500 text-xs">
-                          {new Date(r.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
-                        </td>
-                        <td className="text-center">
-                          {r.status === 'PENDING' ? (
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button onClick={() => handleProcessRefund(r.id, 'APPROVED')} disabled={processingRefund === r.id}
-                                className="px-3 py-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition disabled:opacity-50">
-                                {processingRefund === r.id ? '...' : 'Duyệt'}
-                              </button>
-                              <button onClick={() => { setRejectModal({ id: r.id, sellerId: user?.id || 0 }); setRejectReason(''); }}
-                                className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
-                                Từ chối
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-gray-400">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        {/* Modal Send Key Again */}
+        {sendKeyAgainModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSendKeyAgainModal(false)}>
+                <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
 
-      {rejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setRejectModal(null)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Từ chối yêu cầu</h3>
-            <p className="text-sm text-gray-500 mb-4">Nhập lý do từ chối</p>
-            <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
-              className="admin-input w-full min-h-[100px] resize-none" placeholder="Lý do từ chối..." />
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setRejectModal(null)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition">Huỷ</button>
-              <button onClick={async () => {
-                if (rejectModal) {
-                  await handleProcessRefund(rejectModal.id, 'REJECTED', rejectReason);
-                  setRejectModal(null);
-                }
-              }} disabled={!rejectReason.trim()}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition disabled:opacity-50">
-                Xác nhận từ chối
-              </button>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Cung cấp thông tin tài khoản</h3>
+                    <p className="text-sm text-gray-500 mb-4">{emailRejected ? ("Vui lòng nhập Email và Lí do từ chối") : ("Vui lòng nhập Email và Key bàn giao sản phẩm")}</p>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Email người nhận <span className="text-red-500">*</span></label>
+                            <input
+                                type="email"
+                                value={emailInput}
+                                onChange={e => setEmailInput(e.target.value)}
+                                className="w-full px-3.5 py-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 focus:bg-white transition"
+                                placeholder="Nhập email khách hàng..."
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">{emailRejected ? ("Lí do từ chối") : ("Mã sản phẩm / Key")} <span className="text-red-500">*</span></label>
+                            <textarea
+                                value={keyInput}
+                                onChange={e => setKeyInput(e.target.value)}
+                                rows={3}
+                                className="w-full px-3.5 py-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 focus:bg-white transition resize-none"
+                                placeholder={emailRejected ? ("Nhập lí do từ chối...") : ("Nhập mã key kích hoạt tài khoản...")}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Hệ thống nút bấm */}
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            onClick={() => {
+                                setKeyInput("");
+                                setSendKeyAgainModal(false);
+                            }}
+                            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition"
+                        >
+                            Huỷ
+                        </button>
+                        <button
+                            onClick={() => {
+                                sendMailForUser();
+                                setKeyInput("");
+                                setSendKeyAgainModal(false);
+                            }}
+                            // Chỉ sáng nút bấm khi người dùng đã nhập đủ cả Email và Key (bỏ trống khoảng trắng)
+                            disabled={!keyInput.trim()}
+                            className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Xác nhận gửi
+                        </button>
+                    </div>
+
+                </div>
             </div>
-          </div>
-        </div>
-      )}
+        )}
+
+        {/* Modal Rejected */}
+        {rejectModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setRejectModal(null)}>
+                <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Từ chối yêu cầu</h3>
+                    <p className="text-sm text-gray-500 mb-4">Nhập lý do từ chối</p>
+                    <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+                              className="admin-input w-full min-h-[100px] resize-none" placeholder="Lý do từ chối..." />
+                    <div className="flex gap-3 mt-6">
+                        <button onClick={() => setRejectModal(null)}
+                                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition">Huỷ</button>
+                        <button onClick={async () => {
+                            if (rejectModal) {
+                                await handleProcessRefund(rejectModal.id, 'REJECTED', rejectReason);
+                                setRejectModal(null);
+                            }
+                        }} disabled={!rejectReason.trim()}
+                                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition disabled:opacity-50">
+                            Xác nhận từ chối
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
     </div>
   );
 };
