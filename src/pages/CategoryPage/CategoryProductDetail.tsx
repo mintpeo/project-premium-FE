@@ -7,6 +7,7 @@ import ProductPolicy from '../ProductDetail/ProductPolicy';
 import ProductDescription from '../ProductDetail/ProductDescription';
 import ProductInfo from '../ProductDetail/ProductInfo';
 import ProductReviews from '../ProductDetail/ProductReviews';
+import ProductComments from '../ProductDetail/ProductComments';
 import CategoryProductBanner from './CategoryProductBanner';
 
 const CategoryProductDetail = () => {
@@ -38,6 +39,7 @@ const CategoryProductDetail = () => {
           <ProductDescription />
           <ProductInfo />
           <ProductReviews productId={Number(productId)} />
+          <ProductComments productId={Number(productId)} sellerId={product?.seller?.id} />
         </div>
       </main>
 

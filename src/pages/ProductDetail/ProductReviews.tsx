@@ -51,14 +51,13 @@ const ProductReviews = ({ productId }: { productId: number }) => {
         body: JSON.stringify({ productId, userId: user!.id, stars, content }),
       });
       if (res.ok) {
-        const newReview = await res.json();
-        setReviews(prev => [newReview, ...prev]);
         setSuccess('Đánh giá của bạn đã được gửi!');
         setContent('');
         setStars(5);
-        setTimeout(() => { setShowModal(false); setSuccess(''); }, 1500);
+        setTimeout(() => { setShowModal(false); setSuccess(''); }, 2000);
       } else {
-        setError('Có lỗi xảy ra. Vui lòng thử lại.');
+        const errText = await res.text();
+        setError(errText || 'Có lỗi xảy ra. Vui lòng thử lại.');
       }
     } catch {
       setError('Không thể kết nối server.');

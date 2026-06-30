@@ -10,12 +10,13 @@ const PaymentCancel = () => {
     const hasCalledAPI = useRef(false);
 
     useEffect(() => {
-        const orderCode = searchParams.get('orderCode');
+        // Ưu tiên orderId từ URL (dùng cho repay), fallback orderCode (cho lần đầu)
+        const orderId = searchParams.get('orderId') || searchParams.get('orderCode');
 
-        if (orderCode && !hasCalledAPI.current) {
+        if (orderId && !hasCalledAPI.current) {
             hasCalledAPI.current = true;
 
-            fetch(`http://localhost:8080/api/order/cancel/${orderCode}`, {
+            fetch(`http://localhost:8080/api/order/cancel/${orderId}`, {
                 method: 'PUT',
             })
                 .then(res => res.json())
@@ -44,10 +45,10 @@ const PaymentCancel = () => {
                     </p>
                     <div className="flex flex-col gap-3">
                         <button 
-                            onClick={() => navigate('/checkout')} 
+                            onClick={() => navigate('/profile', { state: { tab: 'order' } })} 
                             className="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition"
                         >
-                            Thử lại
+                            Xem đơn hàng
                         </button>
                         <button 
                             onClick={() => navigate('/')} 

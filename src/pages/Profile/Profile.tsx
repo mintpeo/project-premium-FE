@@ -13,6 +13,8 @@ interface UserProfile {
     phoneNumber: string;
     role: string;
     createdAt: string;
+    points?: number;
+    totalPointsEarned?: number;
 }
 
 interface OrderItemResponse {
@@ -60,6 +62,40 @@ const Profile = () => {
     const [passwordLoading, setPasswordLoading] = useState(false);
 
     const [showKeyForOrder, setShowKeyForOrder] = useState<string | null>(null);
+
+    // Toast notification
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    useEffect(() => {
+        if (toast) {
+            const t = setTimeout(() => setToast(null), 4000);
+            return () => clearTimeout(t);
+        }
+    }, [toast]);
+
+    // Point History
+    const [pointHistory, setPointHistory] = useState<any[]>([]);
+    const [pointHistoryLoading, setPointHistoryLoading] = useState(false);
+
+    useEffect(() => {
+        if (activeTab === 'overview' && user) {
+            fetchPointHistory();
+        }
+    }, [activeTab, user]);
+
+    const fetchPointHistory = async () => {
+        if (!user) return;
+        setPointHistoryLoading(true);
+        try {
+            const res = await fetch(`http://localhost:8080/api/user/points/history/${user.id}`);
+            if (res.ok) {
+                setPointHistory(await res.json());
+            }
+        } catch (err) {
+            console.error("Lỗi khi tải lịch sử điểm:", err);
+        } finally {
+            setPointHistoryLoading(false);
+        }
+    };
 
     // Complain Modal
     const [complainModalOpen, setComplainModalOpen] = useState(false);
@@ -121,9 +157,12 @@ const Profile = () => {
             })
 
             if (res.ok) {
-                alert("Gửi đơn khiếu nại thành công!");
                 setComplainModalOpen(false);
-                window.location.reload();
+                setComplainProductId(0);
+                setReasonText("");
+                setDescriptionText("");
+                setToast({ message: "Gửi đơn khiếu nại thành công! Chúng tôi sẽ phản hồi trong 24h.", type: 'success' });
+                fetchOrderCounts();
             }
         } catch (e) {
             console.log("Error Send Complain", e);
@@ -241,6 +280,11 @@ const Profile = () => {
                 window.location.href = data.checkoutUrl;
             } else {
                 alert(data.error || "Không thể tạo lại link thanh toán.");
+                // Refresh lại danh sách đơn hàng (có thể đã bị huỷ do hết hạn)
+                if (orderStatus) {
+                    handleFetchOrders(orderStatus as 'PENDING' | 'PROCESSING' | 'SUCCESS');
+                }
+                fetchOrderCounts();
             }
         } catch (error) {
             console.error("Lỗi khi thanh toán lại:", error);
@@ -397,6 +441,24 @@ const Profile = () => {
 
             <Header/>
 
+            {toast && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4" onClick={() => setToast(null)}>
+                    <div className="bg-white p-8 md:p-12 rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full text-center animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-center mb-6">
+                            <svg className="w-20 h-20 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h1 className="text-2xl font-bold text-gray-800 mb-3">Gửi khiếu nại thành công!</h1>
+                        <p className="text-gray-500 text-sm mb-8">Chúng tôi sẽ phản hồi bạn trong vòng 24h.</p>
+                        <button onClick={() => setToast(null)}
+                            className="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition">
+                            Đã hiểu
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <main
                 className="flex-1 max-w-[1200px] w-full mx-auto flex flex-col md:flex-row gap-6 pt-12 pb-24 px-4 relative z-10">
                 {/* Left Sidebar */}
@@ -551,6 +613,52 @@ const Profile = () => {
                     {new Date(profile.createdAt).toLocaleDateString('vi-VN')}
                   </span>
                                 </div>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-5 text-white shadow-sm">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-white/80 font-medium">Điểm thưởng</p>
+                                        <p className="text-3xl font-bold mt-1">{profile.points?.toLocaleString('vi-VN') || 0}</p>
+                                    </div>
+                                    <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-white/20 flex gap-6">
+                                    <div>
+                                        <p className="text-xs text-white/70">Đã tích luỹ</p>
+                                        <p className="text-lg font-bold">+{profile.totalPointsEarned?.toLocaleString('vi-VN') || 0}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8">
+                                <h3 className="text-[17px] font-bold text-[#1e293b] mb-4">Lịch sử điểm thưởng</h3>
+                                {pointHistoryLoading ? (
+                                    <div className="text-center py-8 text-gray-400">Đang tải...</div>
+                                ) : pointHistory.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                        Chưa có lịch sử điểm thưởng
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {pointHistory.map((item, idx) => (
+                                            <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                <img src={item.productImg || "/assets/netflix-logo.png"} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-100 shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-gray-800 truncate">{item.productName}</p>
+                                                    <p className="text-xs text-gray-400">{new Date(item.createdAt).toLocaleDateString('vi-VN')}</p>
+                                                </div>
+                                                <span className={`text-sm font-bold ${item.type === 'EARNED' ? 'text-green-600' : 'text-red-500'}`}>
+                                                    {item.type === 'EARNED' ? '+' : '-'}{item.points.toLocaleString('vi-VN')}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </>
                     )}

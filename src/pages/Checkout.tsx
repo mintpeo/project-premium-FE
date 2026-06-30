@@ -46,7 +46,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState('bank');
   const [note, setNote] = useState("");
 
-  const [userPoints, setUserPoints] = useState(0);
+  const [userPoints, setUserPoints] = useState<number | null>(null);
   const [usePoints, setUsePoints] = useState(false);
   const [pointsToUse, setPointsToUse] = useState(0);
 
@@ -55,8 +55,10 @@ const Checkout = () => {
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
 
   const totalAmount = mockCartItems.reduce((sum, item) => sum + item.productPrice * item.quantity, 0);
-  const maxPoints = Math.min(userPoints, totalAmount);
-  const discount = usePoints ? pointsToUse : 0;
+  const POINT_RATE = 100; // 1 point = 100 VND (10 points = 1000 VND)
+  const currentPoints = userPoints ?? 0;
+  const maxPoints = Math.min(currentPoints, Math.floor(totalAmount / POINT_RATE));
+  const discount = usePoints ? pointsToUse * POINT_RATE : 0;
   const finalAmount = totalAmount - discount - couponDiscount;
 
   const handleSelectCoupon = async (code: string) => {
@@ -99,7 +101,8 @@ const Checkout = () => {
         "note": note,
         "totalPrice": finalAmount,
         "pointsUsed": usePoints ? pointsToUse : 0,
-        "couponCode": appliedCoupon || ''
+        "couponCode": appliedCoupon || '',
+        "couponDiscount": couponDiscount
       },
       "items": items
     }
@@ -141,22 +144,21 @@ const Checkout = () => {
         productName: buyNowProduct.name,
       }]);
       setIsLoading(false);
-      return;
-    }
-
-    const getYourCart = async () => {
-      try {
-        const res = await fetch(`http://localhost:8080/api/cart/${user.id}`);
-        const data = await res.json();
-        setCartItems(data);
-        setIsLoading(false);
-      } catch(e) {
-        console.error("Error: Get Mock Cart Item", e);
-        setIsLoading(false);
+    } else {
+      const getYourCart = async () => {
+        try {
+          const res = await fetch(`http://localhost:8080/api/cart/${user.id}`);
+          const data = await res.json();
+          setCartItems(data);
+          setIsLoading(false);
+        } catch(e) {
+          console.error("Error: Get Mock Cart Item", e);
+          setIsLoading(false);
+        }
       }
+      getYourCart();
     }
 
-    getYourCart();
     fetch(`http://localhost:8080/api/user/points/${user.id}`)
       .then(r => r.ok && r.json())
       .then(d => d && setUserPoints(d.points))
@@ -347,32 +349,46 @@ const Checkout = () => {
                   <span>Giảm điểm</span>
                   <span className="font-medium text-green-600">{discount > 0 ? `-${discount.toLocaleString('vi-VN')}đ` : '0đ'}</span>
                 </div>
+                {usePoints && pointsToUse > 0 && (
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span></span>
+                    <span>({pointsToUse.toLocaleString('vi-VN')} điểm × {POINT_RATE}đ)</span>
+                  </div>
+                )}
                 {couponDiscount > 0 && (
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>Giảm mã</span>
                     <span className="font-medium text-green-600">-{couponDiscount.toLocaleString('vi-VN')}đ</span>
                   </div>
                 )}
-                {userPoints > 0 && (
+                {userPoints !== null && (
                   <div className="border-t border-gray-50 pt-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">P</span>
                         <span className="text-sm font-medium text-gray-700">Điểm thưởng</span>
                       </div>
-                      <span className="text-sm font-semibold text-amber-600">{userPoints.toLocaleString('vi-VN')} điểm</span>
+                      <span className="text-sm font-semibold text-amber-600">{currentPoints.toLocaleString('vi-VN')} điểm</span>
                     </div>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={usePoints} onChange={e => { setUsePoints(e.target.checked); if (!e.target.checked) setPointsToUse(0); else setPointsToUse(maxPoints); }}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                      <span className="text-xs text-gray-500">Dùng điểm để giảm tiền</span>
-                    </label>
-                    {usePoints && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <input type="number" value={pointsToUse} onChange={e => { const v = Math.min(Math.max(0, parseInt(e.target.value) || 0), maxPoints); setPointsToUse(v); }}
-                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" min={0} max={maxPoints} />
-                        <span className="text-xs text-gray-400 shrink-0">điểm (tối đa {maxPoints.toLocaleString('vi-VN')})</span>
-                      </div>
+                    <p className="text-xs text-gray-400 mb-2">Tỉ lệ quy đổi: <strong>10 điểm = 1.000đ</strong></p>
+                    {currentPoints > 0 && (
+                      <>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={usePoints} onChange={e => { setUsePoints(e.target.checked); if (!e.target.checked) setPointsToUse(0); else setPointsToUse(maxPoints); }}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <span className="text-xs text-gray-500">Dùng điểm để giảm tiền</span>
+                        </label>
+                        {usePoints && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <input type="number" value={pointsToUse} onChange={e => { const v = Math.min(Math.max(0, parseInt(e.target.value) || 0), maxPoints); setPointsToUse(v); }}
+                              className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" min={0} max={maxPoints} />
+                            <span className="text-xs text-gray-400 shrink-0">điểm = {(pointsToUse * POINT_RATE).toLocaleString('vi-VN')}đ (tối đa {maxPoints.toLocaleString('vi-VN')} điểm)</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {currentPoints === 0 && (
+                      <p className="text-xs text-gray-400 italic">Bạn chưa có điểm thưởng nào</p>
                     )}
                   </div>
                 )}

@@ -91,7 +91,6 @@ function App() {
               <Route path="/admin/keys" element={<ManageProductKeys />} />
               <Route path="/admin/refunds" element={<ManageRefunds />} />
               <Route path="/admin/revenue" element={<ManageRevenue />} />
-              <Route path="/admin/withdrawals" element={<ApproveWithdrawals />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
             </Route>
 

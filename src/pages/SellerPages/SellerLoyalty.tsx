@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Settings, Users, Plus, Check, X, Gift } from 'lucide-react';
+import { Settings, Users, Gift, ChevronRight, Plus, Check, X, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface LoyaltyProgram {
   id: number;
@@ -19,6 +19,15 @@ interface CustomerPoint {
   updatedAt: string;
 }
 
+interface PointHistory {
+  type: string;
+  points: number;
+  orderId: number;
+  productName: string;
+  productImg: string;
+  createdAt: string;
+}
+
 const SellerLoyalty = () => {
   const { user } = useAuth();
   const [program, setProgram] = useState<LoyaltyProgram>({ id: 0, pointRate: 1, pointValue: 100, minOrderValue: 0, active: true });
@@ -27,6 +36,9 @@ const SellerLoyalty = () => {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ ...program });
   const [saving, setSaving] = useState(false);
+
+  const [historyModal, setHistoryModal] = useState<{ customer: CustomerPoint; history: PointHistory[] } | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (user) fetchData();
@@ -44,6 +56,18 @@ const SellerLoyalty = () => {
       if (custRes.ok) setCustomers(await custRes.json());
     } catch {} finally { setLoading(false); }
   };
+
+  const openHistory = useCallback(async (customer: CustomerPoint) => {
+    if (!user) return;
+    setHistoryLoading(true);
+    setHistoryModal({ customer, history: [] });
+    try {
+      const res = await fetch(`http://localhost:8080/api/seller/loyalty/customers/${user.id}/history/${customer.user.id}`);
+      if (res.ok) {
+        setHistoryModal({ customer, history: await res.json() });
+      }
+    } catch {} finally { setHistoryLoading(false); }
+  }, [user]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -131,11 +155,12 @@ const SellerLoyalty = () => {
                   <th className="text-right">Đã tích</th>
                   <th className="text-right">Đã dùng</th>
                   <th className="text-right">Cập nhật</th>
+                  <th className="text-center"></th>
                 </tr>
               </thead>
               <tbody>
                 {customers.map(c => (
-                  <tr key={c.id}>
+                  <tr key={c.id} className="cursor-pointer hover:bg-gray-50" onClick={() => openHistory(c)}>
                     <td>
                       <p className="font-medium text-gray-900">{c.user.fullName}</p>
                       <p className="text-xs text-gray-400">{c.user.email}</p>
@@ -144,6 +169,9 @@ const SellerLoyalty = () => {
                     <td className="text-right text-emerald-600 font-semibold">+{c.totalEarned.toLocaleString('vi-VN')}</td>
                     <td className="text-right text-red-500 font-semibold">-{c.totalRedeemed.toLocaleString('vi-VN')}</td>
                     <td className="text-right text-gray-500 text-sm">{formatDate(c.updatedAt)}</td>
+                    <td className="text-center">
+                      <ChevronRight className="w-4 h-4 text-gray-300 inline" />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -151,6 +179,69 @@ const SellerLoyalty = () => {
           </div>
         )}
       </div>
+
+      {historyModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setHistoryModal(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-2xl mx-4 shadow-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Lịch sử điểm</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {historyModal.customer.user.fullName} — {historyModal.customer.user.email}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-xs text-gray-400">Điểm hiện tại</p>
+                  <p className="text-lg font-bold text-orange-600">{historyModal.customer.points.toLocaleString('vi-VN')}</p>
+                </div>
+                <button onClick={() => setHistoryModal(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              {historyLoading ? (
+                <div className="text-center py-12 text-gray-400">Đang tải...</div>
+              ) : historyModal.history.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">Chưa có giao dịch điểm nào</div>
+              ) : (
+                <div className="space-y-3">
+                  {historyModal.history.map((h, i) => (
+                    <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                        h.type === 'EARNED' ? 'bg-emerald-100' : 'bg-red-100'
+                      }`}>
+                        {h.type === 'EARNED' ? (
+                          <TrendingUp className="w-5 h-5 text-emerald-600" />
+                        ) : (
+                          <TrendingDown className="w-5 h-5 text-red-500" />
+                        )}
+                      </div>
+                      {h.productImg && (
+                        <img src={h.productImg} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate">{h.productName}</p>
+                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                          <Clock className="w-3 h-3" />
+                          {new Date(h.createdAt).toLocaleString('vi-VN')}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className={`text-sm font-bold ${h.type === 'EARNED' ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {h.type === 'EARNED' ? '+' : '-'}{h.points.toLocaleString('vi-VN')}
+                        </p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Đơn #PK-{h.orderId}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {editing && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setEditing(false)}>

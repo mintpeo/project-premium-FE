@@ -131,6 +131,44 @@ const SellerComments = () => {
     }
   };
 
+  const handleApproveReview = async (id: number) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/seller/reviews/${id}/approve`, { method: 'PUT' });
+      if (res.ok) {
+        setReviews(prev => prev.map(r => r.id === id ? { ...r, approved: true } : r));
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDeleteReview = async (id: number) => {
+    if (!confirm('Xoá đánh giá này?')) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/seller/reviews/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setReviews(prev => prev.filter(r => r.id !== id));
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleApproveComment = async (id: number) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/seller/comments/${id}/approve`, { method: 'PUT' });
+      if (res.ok) {
+        setComments(prev => prev.map(c => c.id === id ? { ...c, approved: true } : c));
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDeleteComment = async (id: number) => {
+    if (!confirm('Xoá bình luận này?')) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/seller/comments/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setComments(prev => prev.filter(c => c.id !== id));
+      }
+    } catch (err) { console.error(err); }
+  };
+
   const handleReply = async (parentId: number, productId: number) => {
     const content = replyText[parentId]?.trim();
     if (!content) return;
@@ -273,6 +311,14 @@ const SellerComments = () => {
                 <span className="text-xs text-gray-400">{comment.createdAt ? new Date(comment.createdAt).toLocaleString('vi-VN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : ''}</span>
               </div>
               <p className="text-gray-700 text-sm mt-1">{comment.content}</p>
+              {!comment.approved && !comment.parentId && (
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => handleApproveComment(comment.id)}
+                    className="px-3 py-1 text-xs font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 transition">Duyệt</button>
+                  <button onClick={() => handleDeleteComment(comment.id)}
+                    className="px-3 py-1 text-xs font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition">Xoá</button>
+                </div>
+              )}
             </div>
 
             {replyingId === comment.id ? (
@@ -416,6 +462,14 @@ const SellerComments = () => {
                             </div>
                             <div className="text-yellow-500 text-xs mb-1">{renderStars(review.rating || 5)}</div>
                             <p className="text-gray-700 text-sm mt-1">{review.content}</p>
+                            {!review.approved && (
+                              <div className="flex gap-2 mt-3">
+                                <button onClick={() => handleApproveReview(review.id)}
+                                  className="px-3 py-1 text-xs font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 transition">Duyệt</button>
+                                <button onClick={() => handleDeleteReview(review.id)}
+                                  className="px-3 py-1 text-xs font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition">Xoá</button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}

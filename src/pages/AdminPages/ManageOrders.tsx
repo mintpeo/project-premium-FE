@@ -258,11 +258,20 @@ const ManageOrders = () => {
         <div className="admin-page-header">
           <div className="admin-page-title">
             <div className="accent-dot" />
-            <h1 style={{cursor: "pointer", textDecoration: "underline"}} className="hover:bg-yellow-500" onClick={() => setClickRefund(false)}>Quản lý đơn hàng</h1>
-            <span className="admin-page-count">{filtered.length} đơn</span>
-            <h1 style={{cursor: "pointer", textDecoration: "underline"}} className="hover:bg-yellow-500" onClick={() => setClickRefund(true)}>Khiếu nại / Trả hàng</h1>
-            <span className="admin-page-count">{refunds.length} yêu cầu</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setClickRefund(false)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${!clickRefund ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200'}`}>
+                Đơn hàng
+                <span className="ml-1 text-xs opacity-75">({filtered.length})</span>
+              </button>
+              <button onClick={() => setClickRefund(true)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${clickRefund ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200'}`}>
+                Khiếu nại
+                <span className="ml-1 text-xs opacity-75">({refunds.length})</span>
+              </button>
+            </div>
           </div>
+          {!clickRefund && (
           <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2 max-w-[200px] w-full">
             <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,7 +281,7 @@ const ManageOrders = () => {
               className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none" />
           </div>
           <a href="http://localhost:8080/api/admin/export/orders"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -298,6 +307,7 @@ const ManageOrders = () => {
           })}
         </div>
       </div>
+      )}
       </div>
       <div className="admin-card" style={clickRefund ? {display: "none"} : {display: "block"}}>
         <div className="admin-table-wrap">
@@ -457,7 +467,7 @@ const ManageOrders = () => {
                 <th>Khách hàng</th>
                 <th>Lý do</th>
                 <th>Mô tả chi tiết</th>
-                <th>Lý do từ chối</th>
+                <th>Phản hồi</th>
                 <th>Seller</th>
                 <th className="text-center">Trạng thái</th>
                 <th className="text-right">Ngày</th>
@@ -467,85 +477,62 @@ const ManageOrders = () => {
               <tbody>
               {refunds.sort((a, b) => b.id - a.id).map((r: any) => (
                   <tr key={r.id}>
-                    <td><span
-                        className="font-mono text-sm font-medium text-blue-600">#PK-{r.orderId}</span>
-                    </td>
+                    <td><span className="font-mono text-sm font-medium text-blue-600">#PK-{r.orderId}</span></td>
                     <td>
                       <p className="text-sm font-medium text-gray-900">{r.userName || '—'}</p>
                       <p className="text-xs text-gray-400">{r.email}</p>
                     </td>
-                    <td className="max-w-[200px]">
-                      <p className="text-sm text-gray-700 truncate"
-                         title={r.reason}>{r.reason}</p>
-                      {r.adminNote && <p className="text-xs text-gray-400 mt-0.5">Phản
-                        hồi: {r.adminNote}</p>}
+                    <td className="max-w-[180px]">
+                      <p className="text-sm text-gray-700 truncate" title={r.reason}>{r.reason}</p>
                     </td>
-                    <td className="max-w-[200px]">
-                      <p className="text-sm text-gray-700 truncate"
-                         title={r.description}>{r.description}</p>
-                      {r.adminNote && <p className="text-xs text-gray-400 mt-0.5">Phản
-                        hồi: {r.adminNote}</p>}
+                    <td className="max-w-[180px]">
+                      <p className="text-sm text-gray-700 truncate" title={r.description}>{r.description || '—'}</p>
                     </td>
-                    <td className="max-w-[200px]">
-                      <p className="text-sm text-gray-700 truncate"
-                         title={r.rejected}>{r.rejected}</p>
-                      {r.adminNote && <p className="text-xs text-gray-400 mt-0.5">Phản
-                        hồi: {r.adminNote}</p>}
+                    <td className="max-w-[180px]">
+                      <p className={`text-sm truncate ${r.rejected ? 'text-red-600' : 'text-gray-400'}`} title={r.rejected}>
+                        {r.rejected || '—'}
+                      </p>
                     </td>
                     <td>
                       <p className="text-sm font-medium text-gray-900">{r.userSeller || '—'}</p>
-                      <p className="text-xs text-gray-400">{r.emailSeller}</p>
+                      <p className="text-xs text-gray-400">{r.emailSeller || ''}</p>
                     </td>
                     <td className="text-center">
-                      <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${refundStatusBadge(r.status)}`}>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${refundStatusBadge(r.status)}`}>
                         {refundStatusLabel[r.status] || r.status}
                       </span>
                     </td>
-                    <td className="text-right text-gray-500 text-xs">
+                    <td className="text-right text-gray-500 text-xs whitespace-nowrap">
                       {new Date(r.date).toLocaleString('vi-VN', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
+                        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
                       })}
                     </td>
                     <td className="text-center">
-                      {r.status === 'PENDING' && r.emailSeller == null ? (
+                      {r.status === 'PENDING' && !r.emailSeller ? (
                           <div className="flex items-center justify-center gap-1.5">
                             <button onClick={() => handleProcessRefund(r.id, 'APPROVED')}
                                     disabled={processingRefund === r.id}
                                     className="px-3 py-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition disabled:opacity-50">
                               {processingRefund === r.id ? '...' : 'Duyệt'}
                             </button>
-                            <button onClick={() => {
-                              setRejectModal({id: r.id, sellerId: 0});
-                              setRejectReason('');
-                            }}
+                            <button onClick={() => { setRejectModal({id: r.id, sellerId: 0}); setRejectReason(''); }}
                                     className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
                               Từ chối
                             </button>
                           </div>
-                      ) : r.status === 'APPROVED' && r.emailSeller == null  ? (
-                          <button onClick={() => {
-                            setProcessingRefund(r.id);
-                            setEmailRejected(false);
-                            setSendKeyAgainModal(true);
-                            }}
-                                  className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                      ) : r.status === 'APPROVED' && !r.emailSeller ? (
+                          <button onClick={() => { setProcessingRefund(r.id); setEmailRejected(false); setSendKeyAgainModal(true); }}
+                                  className="px-3 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 rounded-lg hover:bg-amber-100 transition">
                             Gửi Key
                           </button>
-                      ) : r.emailSeller == null ? (
-                          <button onClick={() => {
-                            setProcessingRefund(r.id);
-                            setEmailRejected(true);
-                            setSendKeyAgainModal(true);
-                            }}
+                      ) : !r.emailSeller ? (
+                          <button onClick={() => { setProcessingRefund(r.id); setEmailRejected(true); setSendKeyAgainModal(true); }}
                                   className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition">
-                            Gửi Mail Từ Chối
+                            Từ chối
                           </button>
-                      ) : (<></>)}
+                      ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                      )}
                     </td>
                   </tr>
               ))}

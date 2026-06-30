@@ -23,7 +23,6 @@ const DashboardSidebar = () => {
     { name: 'Danh mục', path: '/admin/categories', icon: <FolderTree size={20} /> },
     { name: 'Người bán', path: '/admin/sellers', icon: <UserCheck size={20} /> },
     { name: 'Duyệt thanh toán', path: '/admin/payments', icon: <Banknote size={20} /> },
-    { name: 'Trả hoa hồng', path: '/admin/withdrawals', icon: <Wallet size={20} /> },
     { name: 'Doanh thu', path: '/admin/revenue', icon: <TrendingUp size={20} /> },
     { name: 'Đánh giá', path: '/admin/reviews', icon: <MessageSquare size={20} /> },
     { name: 'Bình luận', path: '/admin/comments', icon: <MessageCircle size={20} /> },

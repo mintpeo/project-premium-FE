@@ -12,14 +12,13 @@ const PaymentSuccess = () => {
     const hasCalledAPI = useRef(false);
 
     useEffect(() => {
-        // PayOS sẽ trả về url dạng: /payment/success?orderCode=32&status=PAID
-        const orderCode = searchParams.get('orderCode');
+        // Ưu tiên orderId từ URL (dùng cho repay), fallback orderCode (cho lần đầu)
+        const orderId = searchParams.get('orderId') || searchParams.get('orderCode');
 
-        if (orderCode && !hasCalledAPI.current) {
+        if (orderId && !hasCalledAPI.current) {
             hasCalledAPI.current = true;
 
-            // Gọi xuống Backend báo là đã thanh toán thành công để BE tự xuất Key
-            fetch(`http://localhost:8080/api/order/payment-success/${orderCode}`, {
+            fetch(`http://localhost:8080/api/order/payment-success/${orderId}`, {
                 method: 'PUT',
             })
                 .then(res => res.json())
