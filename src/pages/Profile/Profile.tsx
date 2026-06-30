@@ -4,7 +4,7 @@ import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import FloatingActions from '../../components/layout/FloatingActions';
 import {useAuth} from '../../context/AuthContext';
-import {Clock, Key, ShieldCheck, XCircle, CheckCircle} from "lucide-react";
+import {Clock, Key, ShieldCheck, XCircle, CheckCircle, UserX} from "lucide-react";
 
 interface UserProfile {
     id: number;
@@ -22,6 +22,7 @@ interface OrderItemResponse {
     price: number;
     productImg: string;
     keyCode?: string;
+    complainId: number;
 }
 
 interface OrderResponse {
@@ -60,6 +61,15 @@ const Profile = () => {
 
     const [showKeyForOrder, setShowKeyForOrder] = useState<string | null>(null);
 
+    // Complain Modal
+    const [complainModalOpen, setComplainModalOpen] = useState(false);
+    const [orderComplain, setOrderComplain] = useState<OrderResponse[]>([]);
+    const [complainOrderId, setComplainOrderId] = useState(0);
+    const [complainProductId, setComplainProductId] = useState(0);
+    const [reasonText, setReasonText] = useState("");
+    const [descriptionText, setDescriptionText] = useState("");
+    const [complainStatuses, setComplainStatuses] = useState<Record<number, string>>({});
+
     // Review Modal
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [reviewData, setReviewData] = useState({productId: 0, productName: '', stars: 5, content: ''});
@@ -92,6 +102,58 @@ const Profile = () => {
             fetchOrderCounts();
         }
     }, [activeTab, user]);
+
+    const sendComplain = async () => {
+        const send = {
+            orderId: complainOrderId,
+            userId: user?.id,
+            reason: reasonText.trim(),
+            description: descriptionText.trim(),
+            email: user?.email,
+            productId: complainProductId
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8080/api/complain/send`,{
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(send)
+            })
+
+            if (res.ok) {
+                alert("Gửi đơn khiếu nại thành công!");
+                setComplainModalOpen(false);
+                window.location.reload();
+            }
+        } catch (e) {
+            console.log("Error Send Complain", e);
+        }
+    }
+
+    useEffect(() => {
+        getStatusComplain();
+    }, []);
+
+    const getStatusComplain = async (complainId: number) => {
+        if (complainStatuses[complainId]) return;
+
+        try {
+            const res = await fetch(`http://localhost:8080/api/complain/id`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(complainId)
+            });
+            const data = await res.text();
+            setComplainStatuses(prev => ({
+                ...prev,
+                [complainId]: JSON.stringify(data)
+            }));
+        } catch {
+            console.error(`Không thể tải thông tin cho sản phẩm ${complainId}`);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     const fetchProfile = async () => {
         if (!user) return;
@@ -319,6 +381,12 @@ const Profile = () => {
             </div>
         );
     }
+
+    console.log(orders)
+    // console.log(orderComplain)
+    // console.log(complainProductId)
+    // console.log(reasonText)
+    // console.log(descriptionText)
 
     return (
         <div className="min-h-screen bg-[#edf3f6] font-sans flex flex-col relative overflow-x-hidden">
@@ -607,7 +675,9 @@ const Profile = () => {
                                     </div>
 
                                     {/* Body: Danh sách các sản phẩm (items) nằm trong Đơn hàng đó */}
-                                    {order.items && order.items.map((item, idx) => (
+                                    {order.items && order.items.map((item, idx) => {
+                                        getStatusComplain(item.complainId);
+                                        return (
                                         <div key={idx} className="flex items-center space-x-4 mb-4 last:mb-0">
                                             <img
                                                 src={item.productImg || "/assets/netflix-logo.png"}
@@ -618,13 +688,17 @@ const Profile = () => {
                                                 <h4 className="font-medium text-gray-800 text-sm">{item.productName}</h4>
                                                 <p className="text-xs text-gray-500">Số lượng: {item.quantity}</p>
                                             </div>
+                                            <span
+                                                className="text-red-600 bg-blue-50 border-blue-100">{item.complainId != null ? (`Đã khiếu nại - ${
+                                                    complainStatuses[item.complainId] === '"PENDING"' ? ("Đang xử lý") : complainStatuses[item.complainId] === '"APPROVED"' ? ("Được chấp nhận - Vui lòng kiểm tra Mail") : ("Bị từ chối - Vui lòng kiểm tra Mail")
+                                                }`) : (<></>)}</span>
                                             <div className="flex flex-col items-end gap-2">
                                                 <span className="font-semibold text-gray-800 text-sm">
                                                     {item.price.toLocaleString('vi-VN')}đ
                                                 </span>
                                             </div>
                                         </div>
-                                    ))}
+                                        )})}
 
                                     {/* Footer đơn hàng */}
                                     <div
@@ -635,6 +709,24 @@ const Profile = () => {
                                         </div>
                                         {/* Nút hành động tương tác */}
                                         <div className="space-x-2">
+                                            {order.status === 'SUCCESS' && (
+                                                order.items.some(product => product.complainId === null) ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            setComplainModalOpen(true);
+                                                            setOrderComplain([order]);
+                                                            setComplainOrderId(Number(order.orderId));
+                                                        }}
+                                                        className="px-4 py-2 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-gray-50">
+                                                        Khiếu nại
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        className="px-4 py-2 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-gray-50 cursor-not-allowed">
+                                                        Đã khiếu nại tất cả
+                                                    </button>
+                                                )
+                                            )}
                                             <button
                                                 className="px-4 py-2 text-xs border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50">
                                                 Liên hệ hỗ trợ
@@ -686,8 +778,7 @@ const Profile = () => {
                                             {order.items && order.items.map((item, idx) => (
                                                 <div key={idx}
                                                      className="mb-2 last:mb-0 flex items-center justify-between bg-white p-3 border border-gray-200 rounded text-sm">
-                                                    <span
-                                                        className="text-gray-600 font-medium truncate flex-1">{item.productName}</span>
+                                                    <span className="text-gray-600 font-medium truncate flex-1">{item.productName}</span>
                                                     <div className="ml-4 flex items-center gap-2">
                                                         <span
                                                             className="font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
@@ -831,6 +922,105 @@ const Profile = () => {
                         </>
                     )}
                 </div>
+
+                {/* MODAL Complain */}
+                {complainModalOpen && (
+                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+                        <div className="bg-white rounded-xl shadow-xl max-w-[440px] w-full p-6 animate-in fade-in zoom-in duration-200">
+                            <div className="flex items-center gap-3 mb-5 pb-3 border-b border-gray-100">
+                                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+                                    <UserX className="w-5 h-5 text-amber-500" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-800">Gửi khiếu nại</h3>
+                                    <p className="text-gray-400 text-[12px]">Chúng tôi sẽ phản hồi bạn trong vòng 24h.</p>
+                                </div>
+                            </div>
+
+                            {/* Form Content */}
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                            }} className="space-y-4">
+                                {/* Choose product */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                        Sản phẩm cần khiếu nại <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        onChange={(e) => setComplainProductId(Number(e.target.value))}
+                                        required
+                                        className="w-full px-3.5 py-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-amber-500 focus:bg-white transition"
+                                    >
+                                        <option value="">-- Chọn sản phẩm trong đơn hàng --</option>
+                                        {orderComplain?.map((item) => (
+                                            item.items.filter((product) => product.complainId === null)
+                                                .map((product) => (
+                                                    <option key={product.productId} value={product.productId}>
+                                                        {product.productName}
+                                                    </option>
+                                                ))
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Trường 1: Chọn lý do khiếu nại */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                        Lý do khiếu nại <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        onChange={(e) => setReasonText(e.target.value)}
+                                        required
+                                        className="w-full px-3.5 py-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-amber-500 focus:bg-white transition"
+                                    >
+                                        <option value="">-- Chọn lý do --</option>
+                                        <option value="Sai thông tin đăng nhập">Sai thông tin đăng nhập</option>
+                                        <option value="Tài khoản không đúng mô tả">Tài khoản không đúng mô tả</option>
+                                        <option value="Sự cố về tài khoản">Sự cố về tài khoản</option>
+                                        <option value="Lý do khác">Lý do khác</option>
+                                    </select>
+                                </div>
+
+                                {/* Trường 2: Chi tiết nội dung */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                        Mô tả chi tiết <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                        onChange={(e) => setDescriptionText(e.target.value)}
+                                        required
+                                        rows={4}
+                                        placeholder="Vui lòng cung cấp thêm thông tin chi tiết về sự cố bạn gặp phải..."
+                                        className="w-full px-3.5 py-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-amber-500 focus:bg-white transition resize-none placeholder:text-gray-400"
+                                    />
+                                </div>
+
+                                {/* Hệ thống nút bấm */}
+                                <div className="flex w-full gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setComplainModalOpen(false);
+                                            setComplainProductId(0);
+                                            setReasonText("");
+                                            setDescriptionText("");
+                                        }}
+                                        className="flex-1 py-2.5 font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition text-sm"
+                                    >
+                                        Đóng
+                                    </button>
+                                    <button
+                                        onClick={() => sendComplain()}
+                                        type="submit"
+                                        className="flex-1 py-2.5 font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition shadow-sm text-sm"
+                                    >
+                                        Gửi khiếu nại
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
 
                 {/* Cancel Confirmation Modal */}
                 {cancelModalOpen && (
