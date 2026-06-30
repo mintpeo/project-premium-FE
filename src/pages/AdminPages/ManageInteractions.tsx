@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { MessageSquare, Star, MessageCircle, Reply, Package, Search, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { MessageSquare, Star, MessageCircle, Eye, EyeOff, Reply, Package, Search, ChevronDown, ChevronUp, X, CheckCircle } from 'lucide-react';
 
 interface Review {
   id: number;
   content: string;
-  rating: number;
   stars: number;
   user: { id: number; email: string; fullName: string };
   productId: number;
@@ -31,18 +30,11 @@ interface Comment {
   replies?: Comment[];
 }
 
-interface Product {
-  id: number;
-  name: string;
-  img: string;
-}
-
-const SellerComments = () => {
+const ManageInteractions = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'reviews' | 'comments'>('reviews');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [products, setProducts] = useState<Record<number, Product>>({});
   const [loading, setLoading] = useState(true);
   
   // Filters
@@ -56,40 +48,22 @@ const SellerComments = () => {
   const [replyText, setReplyText] = useState<Record<number, string>>({});
   const [replyingId, setReplyingId] = useState<number | null>(null);
   
-  // Expanded State
+  // Expanded State for Reviews (to show shop replies) and Comments (to show sub-comments)
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (user) {
-      fetchProducts();
-      if (activeTab === 'reviews') {
-        fetchReviews();
-      } else {
-        fetchComments();
-      }
+    if (activeTab === 'reviews') {
+      fetchReviews();
+    } else {
+      fetchComments();
     }
-  }, [user, activeTab]);
-
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch(`http://localhost:8080/api/seller/products/${user!.id}`);
-      if (res.ok) {
-        const data: Product[] = await res.json();
-        const productMap = data.reduce((acc, p) => ({ ...acc, [p.id]: p }), {} as Record<number, Product>);
-        setProducts(productMap);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  }, [activeTab]);
 
   const fetchReviews = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/seller/reviews/${user!.id}`);
-      if (res.ok) {
-        setReviews(await res.json());
-      }
+      const res = await fetch(`http://localhost:8080/api/admin/reviews/all`);
+      if (res.ok) setReviews(await res.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -100,10 +74,8 @@ const SellerComments = () => {
   const fetchComments = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/seller/comments/${user!.id}`);
-      if (res.ok) {
-        setComments(await res.json());
-      }
+      const res = await fetch(`http://localhost:8080/api/admin/comments/all`);
+      if (res.ok) setComments(await res.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -111,11 +83,30 @@ const SellerComments = () => {
     }
   };
 
+  const changeStatus = async (id: number, type: 'review' | 'comment', newStatus: 'APPROVED' | 'HIDDEN') => {
+    try {
+      const endpoint = newStatus === 'HIDDEN' 
+        ? `http://localhost:8080/api/admin/${type}s/${id}/hide`
+        : `http://localhost:8080/api/admin/${type}s/${id}/approve`;
+      
+      const res = await fetch(endpoint, { method: 'PUT' });
+      if (!res.ok) throw new Error('Cập nhật trạng thái thất bại');
+      
+      if (type === 'review') {
+        setReviews(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
+      } else {
+        setComments(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+      }
+    } catch (err: any) {
+      alert('Lỗi: ' + (err.message || 'Không thể cập nhật trạng thái'));
+    }
+  };
+
   const handleReplyReview = async (reviewId: number) => {
     const content = replyText[reviewId]?.trim();
     if (!content) return;
     try {
-      const res = await fetch('http://localhost:8080/api/seller/reviews/reply', {
+      const res = await fetch('http://localhost:8080/api/admin/reviews/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reviewId, content }),
@@ -133,7 +124,7 @@ const SellerComments = () => {
     const content = replyText[parentId]?.trim();
     if (!content) return;
     try {
-      const res = await fetch('http://localhost:8080/api/seller/comments/reply', {
+      const res = await fetch('http://localhost:8080/api/admin/comments/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parentId, productId, content, userId: user!.id }),
@@ -160,24 +151,22 @@ const SellerComments = () => {
     return nodes.reduce((acc, node) => acc + 1 + countComments(node.replies || []), 0);
   };
 
-  // 1. Filter raw data first
+  // 1. Filter raw data first based on search and statusFilter
   const filteredReviewsList = reviews.filter(r => {
-    const p = products[r.productId];
-    const matchSearch = p?.name?.toLowerCase().includes(search.toLowerCase()) || 
+    const matchSearch = r.productName?.toLowerCase().includes(search.toLowerCase()) || 
                         r.content.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'ALL' || r.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
   const filteredCommentsList = comments.filter(c => {
-    const p = products[c.productId];
-    const matchSearch = p?.name?.toLowerCase().includes(search.toLowerCase()) || 
+    const matchSearch = c.productName?.toLowerCase().includes(search.toLowerCase()) || 
                         c.content.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'ALL' || c.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
-  // 2. Group the filtered data
+  // 2. Group the filtered data by Product
   const groupedReviews = filteredReviewsList.reduce((acc, r) => {
     if (!acc[r.productId]) acc[r.productId] = [];
     acc[r.productId].push(r);
@@ -190,6 +179,7 @@ const SellerComments = () => {
     return acc;
   }, {} as Record<number, Comment[]>);
 
+  // Build trees for comments
   const groupedComments: Record<number, Comment[]> = {};
   Object.keys(groupedCommentsRaw).forEach(pidStr => {
     const pid = Number(pidStr);
@@ -229,6 +219,45 @@ const SellerComments = () => {
     }
   };
 
+  const renderActionButtons = (item: any, type: 'review' | 'comment') => {
+    return (
+      <div className="flex flex-col gap-1 items-center">
+        {item.status === 'PENDING' && (
+          <div className="flex gap-1">
+            <button 
+              onClick={() => changeStatus(item.id, type, 'APPROVED')}
+              className="p-1.5 rounded-lg text-green-600 bg-green-50 hover:bg-green-100" title="Duyệt"
+            >
+              <CheckCircle size={16} />
+            </button>
+            <button 
+              onClick={() => changeStatus(item.id, type, 'HIDDEN')}
+              className="p-1.5 rounded-lg text-red-600 bg-red-50 hover:bg-red-100" title="Từ chối / Ẩn"
+            >
+              <EyeOff size={16} />
+            </button>
+          </div>
+        )}
+        {item.status === 'APPROVED' && (
+          <button 
+            onClick={() => changeStatus(item.id, type, 'HIDDEN')}
+            className="p-1.5 rounded-lg text-red-500 bg-red-50 hover:bg-red-100" title="Ẩn đi"
+          >
+            <EyeOff size={16} />
+          </button>
+        )}
+        {item.status === 'HIDDEN' && (
+          <button 
+            onClick={() => changeStatus(item.id, type, 'APPROVED')}
+            className="p-1.5 rounded-lg text-green-600 bg-green-50 hover:bg-green-100" title="Duyệt / Hiện"
+          >
+            <CheckCircle size={16} />
+          </button>
+        )}
+      </div>
+    );
+  };
+
   // Modal Renderers
   const renderReviewItem = (review: Review) => (
     <div key={review.id} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0 mb-4 last:mb-0">
@@ -238,11 +267,8 @@ const SellerComments = () => {
             {review.user?.email?.charAt(0).toUpperCase() || '?'}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-sm text-gray-900">{review.user?.fullName || review.user?.email}</p>
-              {!review.isRead && <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Mới</span>}
-            </div>
-            <div className="text-yellow-500 text-xs mb-1">{renderStars(review.stars || review.rating || 5)}</div>
+            <p className="font-semibold text-sm text-gray-900">{review.user?.fullName || review.user?.email}</p>
+            <div className="text-yellow-500 text-xs mb-1">{renderStars(review.stars || 5)}</div>
             <p className="text-sm text-gray-700 mt-1">{review.content}</p>
             <p className="text-xs text-gray-400 mt-1">{new Date(review.createdAt).toLocaleString('vi-VN')}</p>
             
@@ -258,7 +284,7 @@ const SellerComments = () => {
                 {expandedItems.has(review.id) && (
                   <div className="mt-2 ml-2 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm text-gray-800 relative">
                     <div className="absolute -left-2 top-3 w-2 h-px bg-blue-200"></div>
-                    <p className="font-semibold text-blue-700 text-xs mb-1">Phản hồi của bạn:</p>
+                    <p className="font-semibold text-blue-700 text-xs mb-1">Phản hồi từ Shop:</p>
                     {review.shopReply}
                   </div>
                 )}
@@ -290,6 +316,7 @@ const SellerComments = () => {
         </div>
         <div className="flex items-center gap-3">
           {getStatusBadge(review.status)}
+          {renderActionButtons(review, 'review')}
         </div>
       </div>
     </div>
@@ -305,8 +332,7 @@ const SellerComments = () => {
           <div>
             <div className="flex items-center gap-2">
               <p className="font-semibold text-sm text-gray-900">{comment.user?.fullName || comment.user?.email}</p>
-              {!comment.isRead && <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Mới</span>}
-              {level > 0 && <span className="bg-gray-100 text-gray-500 text-[9px] px-1.5 py-0.5 rounded font-bold">Phản hồi</span>}
+              {level > 0 && <span className="bg-gray-100 text-gray-500 text-[10px] px-1.5 py-0.5 rounded">Phản hồi</span>}
             </div>
             <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
             <p className="text-xs text-gray-400 mt-1">{new Date(comment.createdAt).toLocaleString('vi-VN')}</p>
@@ -353,6 +379,7 @@ const SellerComments = () => {
         </div>
         <div className="flex items-center gap-3">
           {getStatusBadge(comment.status)}
+          {renderActionButtons(comment, 'comment')}
         </div>
       </div>
     </div>
@@ -363,7 +390,7 @@ const SellerComments = () => {
       <div className="admin-page-header">
         <div className="admin-page-title">
           <div className="accent-dot" />
-          <h1>Tương tác với khách (Seller)</h1>
+          <h1>Quản lý Tương tác (Admin)</h1>
         </div>
       </div>
 
@@ -375,9 +402,6 @@ const SellerComments = () => {
           } flex items-center gap-2`}
         >
           <Star size={16} /> Đánh giá sản phẩm
-          {reviews.filter(r => !r.isRead).length > 0 && (
-            <span className="bg-red-500 w-2 h-2 rounded-full absolute top-3 right-3" />
-          )}
         </button>
         <button
           onClick={() => { setActiveTab('comments'); setSearch(''); setSelectedProductId(null); setExpandedItems(new Set()); setReplyingId(null); }}
@@ -386,9 +410,6 @@ const SellerComments = () => {
           } flex items-center gap-2`}
         >
           <MessageCircle size={16} /> Bình luận / Hỏi đáp
-          {comments.filter(c => !c.isRead).length > 0 && (
-            <span className="bg-red-500 w-2 h-2 rounded-full absolute top-3 right-3" />
-          )}
         </button>
       </div>
 
@@ -437,32 +458,28 @@ const SellerComments = () => {
               <tbody>
                 {Object.entries(activeTab === 'reviews' ? groupedReviews : groupedComments).map(([pidStr, items]) => {
                   const pid = Number(pidStr);
-                  const p = products[pid];
+                  const sample = items[0] as any;
                   
                   let avgStars = 0;
                   if (activeTab === 'reviews') {
-                    const sum = (items as Review[]).reduce((acc, r) => acc + (r.stars || r.rating || 5), 0);
+                    const sum = (items as Review[]).reduce((acc, r) => acc + (r.stars || 5), 0);
                     avgStars = sum / items.length;
                   }
                   
                   const totalCount = activeTab === 'reviews' ? items.length : groupedCommentsRaw[pid].length;
-                  const hasUnread = items.some((i: any) => !i.isRead);
 
                   return (
                     <tr key={pid} className="cursor-pointer hover:bg-gray-50" onClick={() => setSelectedProductId(pid)}>
                       <td>
                         <div className="flex items-center gap-3">
-                          <div className="relative">
-                            {p?.img ? (
-                              <img src={p.img.split(',')[0]} alt={p.name} className="w-10 h-10 rounded border border-gray-200 object-cover" />
-                            ) : (
-                              <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200">
-                                <Package size={20} />
-                              </div>
-                            )}
-                            {hasUnread && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white rounded-full"></span>}
-                          </div>
-                          <p className="font-semibold text-gray-900 text-sm">{p?.name || `Sản phẩm ID: ${pid}`}</p>
+                          {sample?.productImg ? (
+                            <img src={sample.productImg.split(',')[0]} alt={sample.productName} className="w-10 h-10 rounded border border-gray-200 object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200">
+                              <Package size={20} />
+                            </div>
+                          )}
+                          <p className="font-semibold text-gray-900 text-sm">{sample?.productName || `Sản phẩm ID: ${pid}`}</p>
                         </div>
                       </td>
                       {activeTab === 'reviews' && (
@@ -506,7 +523,7 @@ const SellerComments = () => {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                Chi tiết {activeTab === 'reviews' ? 'Đánh giá' : 'Bình luận'} - {products[selectedProductId]?.name}
+                Chi tiết {activeTab === 'reviews' ? 'Đánh giá' : 'Bình luận'}
               </h3>
               <button onClick={() => setSelectedProductId(null)} className="p-2 hover:bg-gray-200 rounded-full transition text-gray-500">
                 <X size={20} />
@@ -527,4 +544,4 @@ const SellerComments = () => {
   );
 };
 
-export default SellerComments;
+export default ManageInteractions;
